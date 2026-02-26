@@ -122,7 +122,7 @@ export default function AgentSkillsPage() {
 
       <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
         <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Install any skill:</p>
-        <pre className="mt-2 overflow-x-auto text-sm text-purple-700 dark:text-purple-400">
+        <pre className="mt-2 overflow-x-auto text-sm text-red-600 dark:text-red-400">
           <code>npx skills add &lt;owner/repo&gt;</code>
         </pre>
       </div>
@@ -161,7 +161,7 @@ export default function AgentSkillsPage() {
           href="https://skills.sh"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 rounded-lg bg-purple-700 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-purple-800"
+          className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-red-700"
         >
           Browse all agent skills &rarr;
         </a>

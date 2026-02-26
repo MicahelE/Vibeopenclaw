@@ -12,11 +12,11 @@ type ButtonProps = {
 
 const variants = {
   primary:
-    "bg-purple-700 text-white hover:bg-purple-800 border border-purple-700",
+    "bg-red-600 text-white hover:bg-red-700 border border-red-600",
   secondary:
-    "bg-amber-500 text-white hover:bg-amber-600 border border-amber-500",
+    "bg-red-500 text-white hover:bg-red-600 border border-red-500",
   outline:
-    "bg-transparent text-purple-700 hover:bg-purple-50 border border-purple-700 dark:text-purple-400 dark:hover:bg-purple-950 dark:border-purple-400",
+    "bg-transparent text-red-600 hover:bg-red-50 border border-red-600 dark:text-red-400 dark:hover:bg-red-950 dark:border-red-400",
 };
 
 const sizes = {

@@ -71,12 +71,12 @@ export default function SetupServicePage() {
         />
       </div>
       {/* Hero */}
-      <section className="bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 py-20 text-white">
+      <section className="bg-gradient-to-br from-gray-950 via-gray-900 to-red-950 py-20 text-white">
         <div className="mx-auto max-w-5xl px-6 text-center">
           <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
             Professional OpenClaw Setup
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-purple-100">
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-red-100">
             Skip the hassle. Our experts will configure OpenClaw perfectly for your
             use case, install security-vetted skills, and ensure everything runs
             smoothly.
@@ -99,12 +99,12 @@ export default function SetupServicePage() {
               key={tier.name}
               className={`relative rounded-2xl border p-8 ${
                 tier.popular
-                  ? "border-purple-500 shadow-lg shadow-purple-100 dark:shadow-purple-900/20"
+                  ? "border-red-500 shadow-lg shadow-red-100 dark:shadow-red-900/20"
                   : "border-gray-200 dark:border-gray-700"
               }`}
             >
               {tier.popular && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-purple-700 px-4 py-1 text-xs font-semibold text-white">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-red-600 px-4 py-1 text-xs font-semibold text-white">
                   Most Popular
                 </span>
               )}

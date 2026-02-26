@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { OpenClawLogo } from "./openclaw-logo";
 
 const links = [
   { href: "/skills", label: "Skills" },
@@ -20,9 +21,10 @@ export function Nav() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         <Link
           href="/"
-          className="text-xl font-bold text-purple-700 dark:text-purple-400"
+          className="flex items-center gap-2 text-xl font-bold text-red-600 dark:text-red-400"
         >
-          Vibe <span className="text-amber-500">OpenClaw</span>
+          <OpenClawLogo size={32} />
+          Vibe <span className="text-red-500">OpenClaw</span>
         </Link>
 
         {/* Desktop */}
@@ -31,7 +33,7 @@ export function Nav() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-medium text-gray-700 transition-colors hover:text-purple-700 dark:text-gray-300 dark:hover:text-purple-400"
+              className="text-sm font-medium text-gray-700 transition-colors hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400"
             >
               {link.label}
             </Link>

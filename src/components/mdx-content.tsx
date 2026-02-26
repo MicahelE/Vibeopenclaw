@@ -23,16 +23,16 @@ const components = {
     <li className="leading-relaxed" {...props} />
   ),
   code: (props: React.HTMLAttributes<HTMLElement>) => (
-    <code className="rounded bg-gray-100 px-1.5 py-0.5 text-sm font-mono text-purple-700 dark:bg-gray-800 dark:text-purple-400" {...props} />
+    <code className="rounded bg-gray-100 px-1.5 py-0.5 text-sm font-mono text-red-600 dark:bg-gray-800 dark:text-red-400" {...props} />
   ),
   pre: (props: React.HTMLAttributes<HTMLPreElement>) => (
     <pre className="mb-4 overflow-x-auto rounded-lg bg-gray-900 p-4 text-sm text-green-400" {...props} />
   ),
   blockquote: (props: React.HTMLAttributes<HTMLQuoteElement>) => (
-    <blockquote className="mb-4 border-l-4 border-purple-500 pl-4 italic text-gray-600 dark:text-gray-400" {...props} />
+    <blockquote className="mb-4 border-l-4 border-red-500 pl-4 italic text-gray-600 dark:text-gray-400" {...props} />
   ),
   a: (props: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
-    <a className="text-purple-700 underline hover:text-purple-900 dark:text-purple-400" {...props} />
+    <a className="text-red-600 underline hover:text-red-800 dark:text-red-400" {...props} />
   ),
   table: (props: React.TableHTMLAttributes<HTMLTableElement>) => (
     <div className="mb-4 overflow-x-auto"><table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700" {...props} /></div>

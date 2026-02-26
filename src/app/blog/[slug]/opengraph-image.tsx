@@ -26,7 +26,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     (
       <div
         style={{
-          background: "linear-gradient(135deg, #581c87 0%, #6b21a8 40%, #312e81 100%)",
+          background: "linear-gradient(135deg, #0a0a0a 0%, #1a0a0a 40%, #450a0a 100%)",
           width: "100%",
           height: "100%",
           display: "flex",
@@ -46,7 +46,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           >
             <div
               style={{
-                background: "#f59e0b",
+                background: "#dc2626",
                 borderRadius: "8px",
                 padding: "6px 14px",
                 fontSize: "18px",
@@ -56,7 +56,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
             >
               BLOG
             </div>
-            <span style={{ fontSize: "22px", color: "#d8b4fe" }}>Vibe OpenClaw</span>
+            <span style={{ fontSize: "22px", color: "#fca5a5" }}>Vibe OpenClaw</span>
           </div>
           <div
             style={{
@@ -78,10 +78,10 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           }}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            <span style={{ fontSize: "20px", color: "#e9d5ff" }}>{author}</span>
-            <span style={{ fontSize: "18px", color: "#a78bfa" }}>{date}</span>
+            <span style={{ fontSize: "20px", color: "#fca5a5" }}>{author}</span>
+            <span style={{ fontSize: "18px", color: "#f87171" }}>{date}</span>
           </div>
-          <span style={{ fontSize: "18px", color: "#a78bfa" }}>vibeopenclaw.com</span>
+          <span style={{ fontSize: "18px", color: "#f87171" }}>vibeopenclaw.com</span>
         </div>
       </div>
     ),

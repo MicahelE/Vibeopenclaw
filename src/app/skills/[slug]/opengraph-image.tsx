@@ -32,7 +32,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     (
       <div
         style={{
-          background: "linear-gradient(135deg, #581c87 0%, #6b21a8 40%, #312e81 100%)",
+          background: "linear-gradient(135deg, #0a0a0a 0%, #1a0a0a 40%, #450a0a 100%)",
           width: "100%",
           height: "100%",
           display: "flex",
@@ -52,7 +52,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           >
             <div
               style={{
-                background: "#7c3aed",
+                background: "#dc2626",
                 borderRadius: "8px",
                 padding: "6px 14px",
                 fontSize: "18px",
@@ -62,15 +62,15 @@ export default async function Image({ params }: { params: Promise<{ slug: string
             >
               SKILL
             </div>
-            <span style={{ fontSize: "22px", color: "#d8b4fe" }}>Vibe OpenClaw</span>
+            <span style={{ fontSize: "22px", color: "#fca5a5" }}>Vibe OpenClaw</span>
             {category && (
               <div
                 style={{
-                  background: "rgba(139,92,246,0.3)",
+                  background: "rgba(220,38,38,0.3)",
                   borderRadius: "6px",
                   padding: "4px 12px",
                   fontSize: "16px",
-                  color: "#c4b5fd",
+                  color: "#fca5a5",
                 }}
               >
                 {category.name}
@@ -90,7 +90,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           <div
             style={{
               fontSize: "24px",
-              color: "#d8b4fe",
+              color: "#fca5a5",
               marginTop: "16px",
               maxWidth: "900px",
             }}
@@ -118,7 +118,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           >
             {rating}
           </div>
-          <span style={{ fontSize: "18px", color: "#a78bfa" }}>vibeopenclaw.com</span>
+          <span style={{ fontSize: "18px", color: "#f87171" }}>vibeopenclaw.com</span>
         </div>
       </div>
     ),

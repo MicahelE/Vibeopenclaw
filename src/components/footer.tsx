@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { OpenClawLogo } from "./openclaw-logo";
 
 const footerLinks = [
   {
@@ -35,9 +36,10 @@ export function Footer() {
           <div className="col-span-2 md:col-span-1">
             <Link
               href="/"
-              className="text-xl font-bold text-purple-700 dark:text-purple-400"
+              className="flex items-center gap-2 text-xl font-bold text-red-600 dark:text-red-400"
             >
-              Vibe <span className="text-amber-500">OpenClaw</span>
+              <OpenClawLogo size={28} />
+              Vibe <span className="text-red-500">OpenClaw</span>
             </Link>
             <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
               Professional OpenClaw setup services, curated skills, and
@@ -54,7 +56,7 @@ export function Footer() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-sm text-gray-600 hover:text-purple-700 dark:text-gray-400 dark:hover:text-purple-400"
+                      className="text-sm text-gray-600 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
                     >
                       {link.label}
                     </Link>

@@ -37,7 +37,7 @@ export function CategoryFilter({
         onClick={() => setFilter("")}
         className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
           !current
-            ? "bg-purple-700 text-white"
+            ? "bg-red-600 text-white"
             : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300"
         }`}
       >
@@ -49,7 +49,7 @@ export function CategoryFilter({
           onClick={() => setFilter(cat.value)}
           className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
             current === cat.value
-              ? "bg-purple-700 text-white"
+              ? "bg-red-600 text-white"
               : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300"
           }`}
         >

@@ -9,7 +9,7 @@ const badgeVariants = {
   safe: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
   caution: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
   unsafe: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-  category: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+  category: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
 };
 
 export function Badge({ variant = "default", children, className = "" }: BadgeProps) {

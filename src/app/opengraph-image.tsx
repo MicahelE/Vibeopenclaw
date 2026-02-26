@@ -10,7 +10,7 @@ export default function Image() {
     (
       <div
         style={{
-          background: "linear-gradient(135deg, #581c87 0%, #6b21a8 40%, #312e81 100%)",
+          background: "linear-gradient(135deg, #0a0a0a 0%, #1a0a0a 40%, #450a0a 100%)",
           width: "100%",
           height: "100%",
           display: "flex",
@@ -33,18 +33,16 @@ export default function Image() {
               width: "56px",
               height: "56px",
               borderRadius: "12px",
-              background: "#f59e0b",
+              background: "#dc2626",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "28px",
-              fontWeight: 800,
-              color: "#fff",
+              fontSize: "32px",
             }}
           >
-            VC
+            🦞
           </div>
-          <span style={{ fontSize: "32px", fontWeight: 700, color: "#e9d5ff" }}>
+          <span style={{ fontSize: "32px", fontWeight: 700, color: "#fca5a5" }}>
             Vibe OpenClaw
           </span>
         </div>
@@ -63,7 +61,7 @@ export default function Image() {
         <div
           style={{
             fontSize: "24px",
-            color: "#d8b4fe",
+            color: "#fca5a5",
             textAlign: "center",
             marginTop: "24px",
             maxWidth: "700px",
@@ -82,11 +80,11 @@ export default function Image() {
             <div
               key={item}
               style={{
-                background: "rgba(255,255,255,0.15)",
+                background: "rgba(220,38,38,0.3)",
                 borderRadius: "8px",
                 padding: "10px 20px",
                 fontSize: "18px",
-                color: "#e9d5ff",
+                color: "#fca5a5",
               }}
             >
               {item}
