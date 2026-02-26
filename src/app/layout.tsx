@@ -22,12 +22,21 @@ export const metadata: Metadata = {
     title: "Vibe OpenClaw — OpenClaw Setup Services, Skills & Tutorials",
     description:
       "Professional OpenClaw setup services, curated skills directory, and tutorials.",
+    images: [
+      {
+        url: "https://vibeopenclaw.com/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Vibe OpenClaw — OpenClaw Setup Services, Skills & Tutorials",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Vibe OpenClaw — OpenClaw Setup Services",
     description:
       "Professional OpenClaw setup services, curated skills directory, and tutorials.",
+    images: ["https://vibeopenclaw.com/opengraph-image"],
   },
   robots: {
     index: true,

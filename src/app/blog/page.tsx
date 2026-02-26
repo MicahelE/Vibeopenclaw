@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   title: "Blog",
   description:
     "OpenClaw news, security guides, comparisons, and ecosystem updates. Stay informed about the latest in AI agent technology.",
+  alternates: {
+    canonical: "https://vibeopenclaw.com/blog",
+  },
 };
 
 export default function BlogPage() {

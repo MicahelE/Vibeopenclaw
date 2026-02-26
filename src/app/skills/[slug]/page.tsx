@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getSkillBySlug, getCategoryBySlug, getAllSkills } from "@/lib/skills";
 import { SecurityBadge, Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 import type { Metadata } from "next";
 
 export async function generateStaticParams() {
@@ -25,6 +26,9 @@ export async function generateMetadata({
   return {
     title: `${skill.name} — OpenClaw Skill`,
     description: skill.shortDescription || skill.description.slice(0, 160),
+    alternates: {
+      canonical: `https://vibeopenclaw.com/skills/${slug}`,
+    },
     openGraph: {
       title: `${skill.name} — OpenClaw Skill`,
       description: skill.shortDescription || skill.description.slice(0, 160),
@@ -45,11 +49,13 @@ export default async function SkillDetailPage({
 
   return (
     <article className="mx-auto max-w-4xl px-6 py-12">
-      <div className="mb-6 flex items-center gap-3">
-        <Button href="/skills" variant="outline" size="sm">
-          &larr; All Skills
-        </Button>
-      </div>
+      <Breadcrumbs
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Skills", href: "/skills" },
+          { label: skill.name, href: `/skills/${slug}` },
+        ]}
+      />
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <h1 className="text-4xl font-bold text-gray-900 dark:text-white">

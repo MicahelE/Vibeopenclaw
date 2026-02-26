@@ -10,6 +10,9 @@ export const metadata: Metadata = {
   title: "Skills Directory",
   description:
     "Browse security-vetted OpenClaw skills. Search and filter by category, security rating, and more. Find the best skills for productivity, development, and automation.",
+  alternates: {
+    canonical: "https://vibeopenclaw.com/skills",
+  },
 };
 
 function SkillsContent({ searchParams }: { searchParams: Record<string, string> }) {

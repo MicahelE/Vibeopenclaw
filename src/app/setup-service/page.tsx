@@ -1,11 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle, CardDescription } from "@/components/ui/card";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Setup Service",
   description:
     "Professional OpenClaw setup and configuration services. Get expert help installing, configuring, and securing your OpenClaw instance.",
+  alternates: {
+    canonical: "https://vibeopenclaw.com/setup-service",
+  },
 };
 
 const tiers = [
@@ -58,6 +62,14 @@ const tiers = [
 export default function SetupServicePage() {
   return (
     <div>
+      <div className="mx-auto max-w-5xl px-6 pt-8">
+        <Breadcrumbs
+          items={[
+            { label: "Home", href: "/" },
+            { label: "Setup Service", href: "/setup-service" },
+          ]}
+        />
+      </div>
       {/* Hero */}
       <section className="bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 py-20 text-white">
         <div className="mx-auto max-w-5xl px-6 text-center">

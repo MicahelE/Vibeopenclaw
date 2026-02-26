@@ -2,6 +2,11 @@ import fs from "fs";
 import path from "path";
 import matter from "gray-matter";
 
+export interface FAQItem {
+  question: string;
+  answer: string;
+}
+
 export interface ContentMeta {
   title: string;
   description: string;
@@ -10,6 +15,7 @@ export interface ContentMeta {
   tags: string[];
   category?: string;
   featuredImage?: string;
+  faqs?: FAQItem[];
   slug: string;
 }
 

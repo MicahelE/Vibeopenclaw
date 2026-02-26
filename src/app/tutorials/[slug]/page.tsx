@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
-import { getContentBySlug, getAllSlugs } from "@/lib/content";
+import { getContentBySlug, getAllSlugs, getAllContent } from "@/lib/content";
 import { MdxContent } from "@/components/mdx-content";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardTitle, CardDescription } from "@/components/ui/card";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 import type { Metadata } from "next";
 
 export async function generateStaticParams() {
@@ -21,6 +23,9 @@ export async function generateMetadata({
   return {
     title: item.meta.title,
     description: item.meta.description,
+    alternates: {
+      canonical: `https://vibeopenclaw.com/tutorials/${slug}`,
+    },
     openGraph: {
       title: item.meta.title,
       description: item.meta.description,
@@ -40,13 +45,46 @@ export default async function TutorialPage({
   const item = getContentBySlug("tutorials", slug);
   if (!item) notFound();
 
+  const allTutorials = getAllContent("tutorials");
+  const relatedTutorials = allTutorials
+    .filter((t) => t.slug !== slug)
+    .slice(0, 3);
+
+  const techArticleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    headline: item.meta.title,
+    description: item.meta.description,
+    author: { "@type": "Person", name: item.meta.author },
+    datePublished: item.meta.date,
+    dateModified: item.meta.date,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `https://vibeopenclaw.com/tutorials/${slug}`,
+    },
+    image: `https://vibeopenclaw.com/tutorials/${slug}/opengraph-image`,
+    publisher: {
+      "@type": "Organization",
+      name: "Vibe OpenClaw",
+      url: "https://vibeopenclaw.com",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://vibeopenclaw.com/icon.svg",
+      },
+    },
+  };
+
   return (
     <article className="mx-auto max-w-3xl px-6 py-12">
-      <Button href="/tutorials" variant="outline" size="sm">
-        &larr; All Tutorials
-      </Button>
+      <Breadcrumbs
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Tutorials", href: "/tutorials" },
+          { label: item.meta.title, href: `/tutorials/${slug}` },
+        ]}
+      />
 
-      <header className="mt-6 mb-10">
+      <header className="mb-10">
         <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
           {item.meta.title}
         </h1>
@@ -72,23 +110,25 @@ export default async function TutorialPage({
 
       <MdxContent source={item.content} />
 
+      {relatedTutorials.length > 0 && (
+        <section className="mt-16 border-t border-gray-200 pt-10 dark:border-gray-700">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Related Tutorials
+          </h2>
+          <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {relatedTutorials.map((tutorial) => (
+              <Card key={tutorial.slug} href={`/tutorials/${tutorial.slug}`}>
+                <CardTitle>{tutorial.title}</CardTitle>
+                <CardDescription>{tutorial.description}</CardDescription>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "TechArticle",
-            headline: item.meta.title,
-            description: item.meta.description,
-            author: { "@type": "Person", name: item.meta.author },
-            datePublished: item.meta.date,
-            publisher: {
-              "@type": "Organization",
-              name: "Vibe OpenClaw",
-              url: "https://vibeopenclaw.com",
-            },
-          }),
-        }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(techArticleJsonLd) }}
       />
     </article>
   );

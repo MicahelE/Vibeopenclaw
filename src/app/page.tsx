@@ -2,6 +2,22 @@ import { Card, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getFeaturedSkills } from "@/lib/skills";
 import { getAllContent } from "@/lib/content";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Vibe OpenClaw — OpenClaw Setup Services, Skills & Tutorials",
+  description:
+    "Professional OpenClaw setup services, security-vetted skills directory, and step-by-step tutorials. Get expert help configuring OpenClaw safely.",
+  alternates: {
+    canonical: "https://vibeopenclaw.com",
+  },
+  openGraph: {
+    title: "Vibe OpenClaw — OpenClaw Setup Services, Skills & Tutorials",
+    description:
+      "Professional OpenClaw setup services, security-vetted skills directory, and step-by-step tutorials.",
+    url: "https://vibeopenclaw.com",
+  },
+};
 
 export default function Home() {
   let skillCount = 0;
@@ -307,6 +323,25 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: "Vibe OpenClaw",
+            url: "https://vibeopenclaw.com",
+            description:
+              "Professional OpenClaw setup services, security-vetted skills directory, and step-by-step tutorials.",
+            publisher: {
+              "@type": "Organization",
+              name: "Vibe OpenClaw",
+              url: "https://vibeopenclaw.com",
+            },
+          }),
+        }}
+      />
     </>
   );
 }

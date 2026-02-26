@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   title: "Tutorials",
   description:
     "Step-by-step OpenClaw tutorials. Learn how to set up, configure, and get the most out of OpenClaw with our comprehensive guides.",
+  alternates: {
+    canonical: "https://vibeopenclaw.com/tutorials",
+  },
 };
 
 export default function TutorialsPage() {

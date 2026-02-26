@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   title: "Contact",
   description:
     "Get in touch with Vibe OpenClaw about setup services, general inquiries, or enterprise solutions.",
+  alternates: {
+    canonical: "https://vibeopenclaw.com/contact",
+  },
 };
 
 export default function ContactPage() {

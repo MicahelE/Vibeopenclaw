@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   title: "About",
   description:
     "About Vibe OpenClaw — an independent resource hub for OpenClaw users, providing curated skills, tutorials, and professional setup services.",
+  alternates: {
+    canonical: "https://vibeopenclaw.com/about",
+  },
 };
 
 export default function AboutPage() {

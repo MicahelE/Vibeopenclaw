@@ -5,6 +5,17 @@ date: "2026-02-20"
 author: "Vibe OpenClaw Team"
 tags: ["security", "safety", "guide"]
 category: "security"
+faqs:
+  - question: "Is OpenClaw safe to use?"
+    answer: "OpenClaw itself is open-source and well-audited. The core framework is safe when configured properly. The real risks come from third-party skills — approximately 11.3% of marketplace skills exhibit concerning behavior like excessive permissions or obfuscated code."
+  - question: "What is OpenClaw?"
+    answer: "OpenClaw is an open-source AI agent platform with over 191,000 GitHub stars. It runs on your local machine and can automate tasks, manage communications, and execute workflows through modular skills."
+  - question: "Can OpenClaw access my files?"
+    answer: "Only if you grant it permission. OpenClaw uses a granular permission model configured via claw init. You control exactly which directories it can read and write to, which network domains it can access, and whether it can execute shell commands."
+  - question: "How do I protect myself from malicious OpenClaw skills?"
+    answer: "Use vetted skills from trusted sources like our curated directory, review permissions before installing, restrict file system access to specific directories, enable audit logging, and keep OpenClaw updated with the latest security patches."
+  - question: "Is open source software safe to use?"
+    answer: "Open source software like OpenClaw benefits from community code review and transparency. However, safety depends on proper configuration, using vetted extensions, and following security best practices. The open-source model means anyone can inspect the code for vulnerabilities."
 ---
 
 ## The Short Answer
@@ -122,3 +133,9 @@ OpenClaw sends your prompts to an LLM provider. Be mindful of what data you proc
 OpenClaw is a powerful tool that is safe to use **when configured properly**. The key is treating it like any software that runs with elevated permissions: be deliberate about what you grant access to, use vetted skills, and keep everything updated.
 
 If you want help configuring OpenClaw securely, check out our [Setup Service](/setup-service) — security hardening is included in every plan.
+
+## Further Reading
+
+- [Getting Started with OpenClaw: Complete Setup Guide](/tutorials/getting-started-with-openclaw) — Install and configure OpenClaw safely from scratch
+- [How to Install and Manage OpenClaw Skills Safely](/tutorials/install-manage-openclaw-skills) — Deep dive into skill vetting and permission management
+- [Best OpenClaw Skills in 2026](/blog/best-openclaw-skills-2026) — Our curated list of security-vetted skills

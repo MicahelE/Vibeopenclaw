@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   title: "Agent Skills",
   description:
     "Browse popular open-source agent skills. Install with a single npx command for Claude Code, Cursor, Copilot, and more.",
+  alternates: {
+    canonical: "https://vibeopenclaw.com/agent-skills",
+  },
 };
 
 const agentSkills = [
