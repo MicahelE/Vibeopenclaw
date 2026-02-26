@@ -1,4 +1,4 @@
-export const GA_MEASUREMENT_ID = "G-XXXXXXXXXX";
+export const GA_MEASUREMENT_ID = "G-11V9VZWZYD";
 
 export function trackEvent(
   action: string,
