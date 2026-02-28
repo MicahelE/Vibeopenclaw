@@ -142,7 +142,7 @@ export default function AdminPage() {
                   <td className="whitespace-nowrap px-4 py-3 text-gray-600 dark:text-gray-400">
                     {c.serviceType || "—"}
                   </td>
-                  <td className="max-w-xs truncate px-4 py-3 text-gray-600 dark:text-gray-400">
+                  <td className="max-w-md px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words">
                     {c.message}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-gray-500 dark:text-gray-500">
