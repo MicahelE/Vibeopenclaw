@@ -157,6 +157,22 @@ const skillData = [
 
     featured: 0,
   },
+  {
+    name: "Donotify Voice Call Reminder",
+    slug: "donotify-voice-call-reminder",
+    description:
+      "Send immediate voice call reminders or schedule future calls via DoNotify. Perfect for time-sensitive notifications, appointment reminders, and urgent alerts that need to cut through the noise of text-based notifications.",
+    shortDescription:
+      "Voice call reminders via DoNotify — instant or scheduled",
+    author: "MicahelE",
+    categorySlug: "communication",
+    githubUrl: null,
+    clawhubUrl: "https://clawhub.ai/MicahelE/donotify-voice-call-reminder",
+    securityRating: "safe",
+    permissionsRequired: "DoNotify API key, network access",
+
+    featured: 1,
+  },
   // --- Development ---
   {
     name: "GitHub",
