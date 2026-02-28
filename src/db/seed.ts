@@ -5,7 +5,7 @@ import { sql } from "drizzle-orm";
 import path from "path";
 import fs from "fs";
 
-const dbDir = path.join(process.cwd(), "data");
+const dbDir = process.env.DATABASE_DIR || path.join(process.cwd(), "data");
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }

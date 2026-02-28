@@ -17,9 +17,9 @@ jobs:
           script: |
             cd /opt/vibeopenclaw
             git pull origin main
+            export DATABASE_DIR=/opt/vibeopenclaw/data
             npx tsx src/db/seed.ts
             npm run build
             cp -r .next/static .next/standalone/.next/static
-            cp -r data .next/standalone/data
             cp -r content .next/standalone/content
             sudo systemctl restart vibeopenclaw
