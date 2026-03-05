@@ -1,0 +1,345 @@
+---
+title: "OpenClaw for Enterprise: Deployment, Security & Scaling Guide"
+description: "Deploy OpenClaw for your team or enterprise. Covers deployment options, security compliance, team management, scaling strategies, and cost analysis."
+date: "2026-02-25"
+author: "Vibe OpenClaw Team"
+tags: ["enterprise", "security", "scaling", "teams"]
+category: "enterprise"
+faqs:
+  - question: "Is OpenClaw suitable for enterprise use?"
+    answer: "Yes. OpenClaw's open-source model means you control your data and infrastructure. With proper configuration — self-hosted deployment, SSO integration, audit logging, and network isolation — it meets enterprise security requirements. Many organizations run OpenClaw for development teams of 10-200+ engineers."
+  - question: "How much does OpenClaw cost for a team?"
+    answer: "OpenClaw itself is free. Costs come from infrastructure ($20-100/month for a shared server) and LLM API usage ($10-50/user/month depending on usage). Total cost for a 10-person team is typically $200-600/month — significantly less than commercial AI agent platforms."
+  - question: "Does OpenClaw support SSO and RBAC?"
+    answer: "Yes. OpenClaw supports SAML and OIDC for single sign-on, integrating with providers like Okta, Azure AD, and Google Workspace. Role-based access control allows you to define admin, developer, and read-only roles with granular permission sets."
+---
+
+## Why Enterprise Teams Choose OpenClaw
+
+Enterprise teams adopt OpenClaw for the same reasons individuals love it — powerful AI automation — but with additional requirements around security, compliance, and scale.
+
+Key enterprise advantages:
+
+- **Data sovereignty** — Self-host on your infrastructure, keeping data in your control
+- **No vendor lock-in** — Open-source with support for multiple LLM providers
+- **Cost efficiency** — Pay only for infrastructure and API usage, no per-seat licensing
+- **Customizability** — Build custom skills and integrations for your specific workflows
+- **Transparency** — Full source code visibility for security audits
+
+## Deployment Options
+
+### Option 1: Shared Self-Hosted Instance
+
+Best for teams of 5-50. A single OpenClaw instance serves the entire team:
+
+```yaml
+# docker-compose.yml for team deployment
+version: "3.8"
+
+services:
+  openclaw:
+    image: ghcr.io/openclaw/openclaw:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - OPENCLAW_AUTH_ENABLED=true
+      - OPENCLAW_AUTH_PROVIDER=oidc
+      - OPENCLAW_OIDC_ISSUER=${OIDC_ISSUER}
+      - OPENCLAW_OIDC_CLIENT_ID=${OIDC_CLIENT_ID}
+      - OPENCLAW_OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET}
+      - OPENCLAW_API_KEY=${OPENCLAW_API_KEY}
+      - OPENCLAW_TEAM_MODE=true
+    volumes:
+      - ./config:/home/openclaw/.config/openclaw
+      - ./data:/home/openclaw/.local/share/openclaw
+```
+
+### Option 2: Per-User Instances
+
+Best for security-sensitive environments. Each developer gets their own isolated instance:
+
+```yaml
+# Template per-user instance
+services:
+  openclaw-${USER}:
+    image: ghcr.io/openclaw/openclaw:latest
+    restart: unless-stopped
+    environment:
+      - OPENCLAW_USER=${USER}
+      - OPENCLAW_API_KEY=${USER_API_KEY}
+    volumes:
+      - ./${USER}/config:/home/openclaw/.config/openclaw
+      - ./${USER}/data:/home/openclaw/.local/share/openclaw
+    networks:
+      - internal
+```
+
+### Option 3: Kubernetes Deployment
+
+For large organizations with existing Kubernetes infrastructure:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openclaw
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: openclaw
+  template:
+    metadata:
+      labels:
+        app: openclaw
+    spec:
+      containers:
+        - name: openclaw
+          image: ghcr.io/openclaw/openclaw:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: OPENCLAW_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw-secrets
+                  key: api-key
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "500m"
+            limits:
+              memory: "4Gi"
+              cpu: "2"
+```
+
+## Security and Compliance
+
+### Authentication and Authorization
+
+Enable SSO with your identity provider:
+
+```yaml
+# config.yaml
+auth:
+  enabled: true
+  provider: oidc
+  oidc:
+    issuer: "https://your-idp.okta.com"
+    client_id: "your-client-id"
+    client_secret: "your-client-secret"
+    scopes: ["openid", "profile", "email"]
+
+  roles:
+    admin:
+      permissions: ["*"]
+    developer:
+      permissions: ["tasks.create", "tasks.read", "skills.use", "config.read"]
+    viewer:
+      permissions: ["tasks.read", "config.read"]
+```
+
+### Audit Logging
+
+Every action in OpenClaw can be logged for compliance:
+
+```yaml
+# config.yaml
+audit:
+  enabled: true
+  log_file: /var/log/openclaw/audit.log
+  events:
+    - task.created
+    - task.completed
+    - skill.installed
+    - config.changed
+    - auth.login
+    - auth.failed
+  format: json
+```
+
+Audit logs integrate with SIEM systems (Splunk, Elastic, Datadog) via standard log forwarding.
+
+### Network Security
+
+Isolate OpenClaw from production systems:
+
+- Run in a dedicated network segment or VLAN
+- Use firewall rules to restrict outbound connections
+- Route LLM API calls through a proxy for monitoring
+- Block access to production databases from the OpenClaw network
+
+```yaml
+# Docker network isolation
+networks:
+  openclaw-net:
+    driver: bridge
+    internal: false
+  production:
+    external: true
+    # OpenClaw containers are NOT connected to this network
+```
+
+### Data Protection
+
+- All data stays on your infrastructure
+- API keys are encrypted at rest
+- Conversation history is stored locally and can be auto-purged
+- No telemetry is sent when `OPENCLAW_DISABLE_TELEMETRY=true`
+
+### Compliance Considerations
+
+| Framework | OpenClaw Support |
+|-----------|-----------------|
+| SOC 2 | Self-hosted meets data residency requirements; audit logging supports controls |
+| GDPR | Data stays on your infrastructure; configure auto-deletion of conversation history |
+| HIPAA | Use per-user instances with encrypted volumes; restrict LLM providers to HIPAA-compliant options |
+| ISO 27001 | Audit logging, RBAC, and network isolation support certification requirements |
+
+## Team Management
+
+### Onboarding New Team Members
+
+Create a standardized setup script:
+
+```bash
+#!/bin/bash
+# onboard-user.sh
+USER_EMAIL=$1
+
+# Create user in OpenClaw
+claw admin user create --email "$USER_EMAIL" --role developer
+
+# Set up their workspace
+claw admin workspace create --user "$USER_EMAIL" \
+  --template "standard-dev"
+
+echo "User $USER_EMAIL onboarded. They can log in via SSO."
+```
+
+### Shared Skills and Configuration
+
+Maintain a team skill registry:
+
+```yaml
+# team-skills.yaml
+required_skills:
+  - name: git-helper
+    version: ">=2.0.0"
+  - name: jira-integration
+    version: "latest"
+  - name: code-reviewer
+    version: ">=1.5.0"
+
+team_config:
+  model:
+    provider: anthropic
+    default_model: claude-sonnet-4-20250514
+  permissions:
+    file_access: ["~/projects/**"]
+    network_access: ["github.com", "jira.company.com"]
+```
+
+Deploy team configuration:
+
+```bash
+claw admin config push --file team-skills.yaml --target all-users
+```
+
+### Usage Monitoring
+
+Track team usage and costs:
+
+```bash
+# View usage by user
+claw admin usage --period 30d --group-by user
+
+# View usage by skill
+claw admin usage --period 30d --group-by skill
+
+# Export for billing
+claw admin usage --period 30d --format csv > usage-report.csv
+```
+
+## Scaling Strategies
+
+### Horizontal Scaling
+
+For teams over 50 users, run multiple OpenClaw instances behind a load balancer:
+
+```yaml
+services:
+  openclaw-1:
+    image: ghcr.io/openclaw/openclaw:latest
+    # ... config
+
+  openclaw-2:
+    image: ghcr.io/openclaw/openclaw:latest
+    # ... config
+
+  haproxy:
+    image: haproxy:latest
+    ports:
+      - "443:443"
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
+```
+
+### LLM Provider Management
+
+Spread API usage across providers to avoid rate limits and optimize costs:
+
+```yaml
+# config.yaml
+model:
+  providers:
+    - name: anthropic
+      api_key: "${ANTHROPIC_KEY}"
+      weight: 60  # 60% of requests
+    - name: openai
+      api_key: "${OPENAI_KEY}"
+      weight: 30  # 30% of requests
+    - name: ollama
+      url: "http://ollama:11434"
+      weight: 10  # 10% for local, non-sensitive tasks
+```
+
+### Caching
+
+Enable response caching for common queries:
+
+```yaml
+# config.yaml
+cache:
+  enabled: true
+  backend: redis
+  redis_url: "redis://redis:6379"
+  ttl: 3600
+  max_size: "1GB"
+```
+
+## Cost Analysis
+
+| Component | 10-Person Team | 50-Person Team | 100-Person Team |
+|-----------|---------------|----------------|-----------------|
+| Infrastructure | $20-50/mo | $100-300/mo | $300-800/mo |
+| LLM API (avg) | $200-500/mo | $1,000-2,500/mo | $2,000-5,000/mo |
+| **Total** | **$220-550/mo** | **$1,100-2,800/mo** | **$2,300-5,800/mo** |
+| Per user | $22-55/mo | $22-56/mo | $23-58/mo |
+
+Compare this to commercial alternatives that charge $30-100+ per user per month with less flexibility.
+
+## Getting Started
+
+1. Follow our [self-hosting guide](/tutorials/openclaw-self-hosting-guide) for initial deployment
+2. Configure SSO with your identity provider
+3. Set up audit logging and monitoring
+4. Deploy team skills and configuration
+5. Onboard your first users
+
+## Further Reading
+
+- [Self-Hosting OpenClaw: Docker Compose + Security Hardening](/tutorials/openclaw-self-hosting-guide) — Detailed deployment and hardening walkthrough
+- [Is OpenClaw Safe? A Complete Security Guide](/blog/is-openclaw-safe) — Understanding the security model
+- [OpenClaw API Tutorial](/tutorials/openclaw-api-tutorial) — Build custom integrations for your team's workflows

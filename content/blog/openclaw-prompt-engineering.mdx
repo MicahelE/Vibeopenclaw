@@ -1,0 +1,225 @@
+---
+title: "OpenClaw Prompt Engineering: Tips to Maximize Your AI Agent"
+description: "Master prompt engineering for OpenClaw. Learn system prompts, task-specific techniques, advanced strategies, and common mistakes to get the best results from your AI agent."
+date: "2026-03-01"
+author: "Vibe OpenClaw Team"
+tags: ["prompts", "tips", "productivity", "best-practices"]
+category: "best-practices"
+faqs:
+  - question: "What is prompt engineering for OpenClaw?"
+    answer: "Prompt engineering for OpenClaw is the practice of crafting effective instructions that guide your AI agent to produce better results. This includes writing clear system prompts, structuring task prompts, and using techniques like few-shot examples and chain-of-thought reasoning."
+  - question: "What is the difference between system prompts and user prompts in OpenClaw?"
+    answer: "System prompts set the overall behavior, personality, and constraints for your OpenClaw agent — they persist across all interactions. User prompts are the individual task instructions you send for each request. System prompts go in config.yaml; user prompts are what you type in the CLI or API."
+  - question: "How long should my OpenClaw prompts be?"
+    answer: "Keep system prompts concise — 200-500 words covering role, constraints, and style. Task prompts should be as specific as needed but avoid unnecessary context. Longer is not always better; clarity and structure matter more than length."
+---
+
+## Why Prompts Matter in OpenClaw
+
+OpenClaw is only as effective as the instructions you give it. A vague prompt like "fix my code" might produce a different result than "find and fix the null pointer exception in src/auth.ts on line 42." The difference between a mediocre experience and a powerful one often comes down to how you communicate with your agent.
+
+This guide covers practical techniques for getting better results from OpenClaw through thoughtful prompt construction.
+
+## System Prompt Basics
+
+Your system prompt defines how OpenClaw behaves across all interactions. It lives in your configuration file:
+
+```yaml
+# ~/.config/openclaw/config.yaml
+system_prompt: |
+  You are a senior full-stack developer working on a Next.js application.
+  Always use TypeScript with strict types.
+  Prefer functional components and hooks over class components.
+  Write tests for any new functionality.
+  Follow the existing code style and conventions.
+```
+
+### What to Include in Your System Prompt
+
+- **Role definition** — "You are a senior backend engineer" gives better results than no role
+- **Technology stack** — Mention your languages, frameworks, and tools
+- **Code style preferences** — Tabs vs spaces, naming conventions, patterns
+- **Constraints** — What the agent should never do (e.g., "never modify .env files")
+- **Output format** — How you want responses structured
+
+### What to Avoid
+
+- Overly long prompts that dilute the important parts
+- Contradictory instructions
+- Vague personality descriptions ("be helpful" adds nothing)
+- Instructions the agent cannot follow (e.g., "remember our conversation from last week")
+
+## Task-Specific Prompting
+
+For individual tasks, specificity is your best friend. Compare these prompts:
+
+**Weak prompt:**
+```
+Fix the bug in the login page
+```
+
+**Strong prompt:**
+```
+The login form at src/components/LoginForm.tsx submits but the API returns a 401.
+Check the authentication flow — the JWT token might not be included in the
+Authorization header. The API expects Bearer token format.
+```
+
+### The SCOPE Framework
+
+Structure your task prompts with SCOPE:
+
+- **S**ituation — What is the current state?
+- **C**ontext — What files, APIs, or systems are involved?
+- **O**bjective — What should the end result be?
+- **P**references — Any specific approaches or constraints?
+- **E**xamples — What does success look like?
+
+Example:
+
+```
+Situation: The user search endpoint returns all users instead of filtered results.
+Context: API route at src/api/users/search.ts, uses PostgreSQL via Prisma.
+Objective: Fix the search to filter by name and email using the `q` parameter.
+Preferences: Use Prisma's `contains` filter with case-insensitive mode.
+Examples: GET /api/users/search?q=john should only return users with "john"
+in their name or email.
+```
+
+## Advanced Techniques
+
+### Chain-of-Thought Prompting
+
+Ask OpenClaw to think through problems step by step:
+
+```
+Analyze the performance issue in our API endpoint. Think through this step by step:
+1. Identify which queries are slow
+2. Check for missing database indexes
+3. Look for N+1 query patterns
+4. Suggest optimizations with expected impact
+```
+
+### Few-Shot Examples
+
+Provide examples of the output format you want:
+
+```
+Convert these API routes from Express to Hono. Here's the pattern I want:
+
+Before:
+app.get('/users', async (req, res) => { ... })
+
+After:
+app.get('/users', async (c) => { ... return c.json(result) })
+
+Now convert all routes in src/routes/products.ts following this pattern.
+```
+
+### Constraint-Based Prompting
+
+Set boundaries to prevent unwanted changes:
+
+```
+Refactor the UserService class to use dependency injection.
+Constraints:
+- Do not change the public API (method signatures must stay the same)
+- Do not modify any test files
+- Keep all existing imports
+- Only touch files in src/services/
+```
+
+### Iterative Refinement
+
+Break complex tasks into steps:
+
+```
+Step 1: Read src/api/ and list all endpoints that don't have input validation.
+```
+
+Then after reviewing the output:
+
+```
+Step 2: Add Zod validation schemas to the 3 most critical endpoints you identified.
+Use the pattern from src/api/auth/login.ts as a reference.
+```
+
+## Common Mistakes
+
+### Mistake 1: Being Too Vague
+
+"Make the app faster" gives OpenClaw no direction. Instead:
+
+"Profile the /dashboard page load. The initial API call to /api/dashboard/stats takes 3+ seconds. Check the database query and add caching if appropriate."
+
+### Mistake 2: Overloading a Single Prompt
+
+Asking for 10 things at once leads to mediocre results on all of them. Break complex work into focused tasks.
+
+### Mistake 3: Not Providing Context
+
+OpenClaw cannot read your mind. If the bug only happens in production, say so. If there is a related issue or PR, reference it.
+
+### Mistake 4: Ignoring the System Prompt
+
+If you find yourself repeating the same instructions in every task prompt, move them to your system prompt instead.
+
+### Mistake 5: Not Reviewing Output
+
+Prompt engineering is iterative. Review what OpenClaw produces, note where it missed the mark, and refine your prompt accordingly.
+
+## Prompt Templates for Common Tasks
+
+### Bug Fix
+
+```
+Bug: [describe the bug]
+Expected behavior: [what should happen]
+Actual behavior: [what happens instead]
+Steps to reproduce: [how to trigger it]
+Relevant files: [file paths]
+```
+
+### Code Review
+
+```
+Review the changes in [file/PR].
+Focus on: security issues, performance, error handling, and code style.
+Flag anything that deviates from our patterns in [reference file].
+```
+
+### New Feature
+
+```
+Implement [feature name] following our existing patterns.
+Reference implementation: [similar feature path]
+Requirements:
+- [requirement 1]
+- [requirement 2]
+Add tests covering the happy path and edge cases.
+```
+
+### Refactoring
+
+```
+Refactor [file/module] to [objective].
+Preserve all existing behavior — no functional changes.
+Run the test suite after changes to verify nothing breaks.
+```
+
+## Measuring Prompt Effectiveness
+
+Track these signals to improve your prompts over time:
+
+- **First-attempt success rate** — How often does OpenClaw get it right without follow-up?
+- **Follow-up count** — How many corrections do you need per task?
+- **Output quality** — Is the code clean, well-tested, and following conventions?
+- **Consistency** — Do similar prompts produce similar quality results?
+
+If you find yourself frequently correcting the same issues, update your system prompt to address them.
+
+## Further Reading
+
+- [OpenClaw Workflow Automation](/tutorials/openclaw-workflow-automation) — Chain prompts into automated workflows
+- [OpenClaw Automation: Automate Repetitive Tasks with AI](/blog/openclaw-automation-guide) — Practical automation recipes
+- [Getting Started with OpenClaw](/tutorials/getting-started-with-openclaw) — Initial setup and configuration

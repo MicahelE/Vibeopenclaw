@@ -1,0 +1,315 @@
+---
+title: "OpenClaw MCP Server Guide: Connect 1000+ Tools to Your AI Agent"
+description: "Learn how MCP servers work with OpenClaw. Set up, configure, and build custom MCP integrations to connect your AI agent to databases, APIs, and dev tools."
+date: "2026-03-03"
+author: "Vibe OpenClaw Team"
+tags: ["mcp", "integrations", "tools", "advanced"]
+category: "integrations"
+faqs:
+  - question: "What exactly is an MCP server?"
+    answer: "MCP (Model Context Protocol) is an open standard that lets AI agents communicate with external tools and data sources through a unified protocol. An MCP server exposes tools, resources, and prompts that any MCP-compatible agent — including OpenClaw — can use. Think of it as a universal adapter between your AI and external services."
+  - question: "Can I run a local MCP server?"
+    answer: "Yes. Most MCP servers run locally on your machine alongside OpenClaw. They communicate over stdio or HTTP. You can run multiple MCP servers simultaneously, each providing different capabilities like file access, database queries, or API integrations."
+  - question: "What MCP servers should I use with OpenClaw?"
+    answer: "Start with the filesystem MCP server for file operations and the fetch server for web requests. From there, add servers based on your workflow: GitHub for code repos, PostgreSQL for databases, Slack for messaging, or Puppeteer for browser automation. The MCP ecosystem has over 1,000 community servers available."
+  - question: "How many MCP servers can I run at once?"
+    answer: "There is no hard limit. OpenClaw can connect to dozens of MCP servers simultaneously. However, each server consumes some memory and adds to the tool list your agent sees, so aim for 5-10 active servers focused on your current workflow for best performance."
+  - question: "Is MCP the same as plugins or skills?"
+    answer: "No. OpenClaw skills are bundled packages that run inside OpenClaw. MCP servers are external processes that communicate with OpenClaw via a standardized protocol. Skills are simpler to install; MCP servers are more powerful and can connect to virtually any external system."
+---
+
+## What is MCP?
+
+Model Context Protocol (MCP) is an open standard created by Anthropic that defines how AI agents interact with external tools and data. Instead of building custom integrations for every service, MCP provides a single protocol that works everywhere.
+
+For OpenClaw users, MCP means you can connect your agent to databases, APIs, development tools, and cloud services — all through a consistent interface.
+
+## How MCP Works with OpenClaw
+
+The architecture is straightforward:
+
+1. **OpenClaw** acts as an MCP client
+2. **MCP servers** run as separate processes (locally or remotely)
+3. Communication happens over **stdio** (local) or **HTTP/SSE** (remote)
+4. Each server exposes **tools**, **resources**, and **prompts**
+
+When you ask OpenClaw to perform a task, it checks which MCP tools are available and uses them as needed. For example, if you have a GitHub MCP server running, OpenClaw can create issues, review PRs, and search repositories.
+
+## Setting Up Your First MCP Server
+
+### Step 1: Configure MCP in OpenClaw
+
+OpenClaw stores MCP configuration in `~/.config/openclaw/mcp.json`. Create or edit this file:
+
+```bash
+mkdir -p ~/.config/openclaw
+touch ~/.config/openclaw/mcp.json
+```
+
+### Step 2: Add a Filesystem Server
+
+The filesystem MCP server is the most common starting point. It gives OpenClaw controlled access to read and write files:
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/home/user/projects",
+        "/home/user/documents"
+      ]
+    }
+  }
+}
+```
+
+This grants OpenClaw access to the specified directories only.
+
+### Step 3: Restart OpenClaw
+
+After updating the config, restart OpenClaw to load the new MCP servers:
+
+```bash
+claw restart
+```
+
+Verify the server is connected:
+
+```bash
+claw mcp list
+```
+
+You should see the filesystem server listed with its available tools.
+
+## Configuring Multiple MCP Servers
+
+A typical development setup might include several servers:
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/home/user/projects"]
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "ghp_your_token_here"
+      }
+    },
+    "fetch": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch"]
+    },
+    "postgres": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres"],
+      "env": {
+        "DATABASE_URL": "postgresql://user:pass@localhost:5432/mydb"
+      }
+    }
+  }
+}
+```
+
+Each server runs as an independent process. OpenClaw manages their lifecycle — starting them when needed and stopping them on shutdown.
+
+## Popular MCP Servers
+
+Here are the most useful MCP servers for OpenClaw users:
+
+### Development Tools
+
+| Server | Package | What It Does |
+|--------|---------|-------------|
+| GitHub | `@modelcontextprotocol/server-github` | Issues, PRs, repo management |
+| GitLab | `@modelcontextprotocol/server-gitlab` | GitLab API access |
+| Filesystem | `@modelcontextprotocol/server-filesystem` | Controlled file read/write |
+| Puppeteer | `@modelcontextprotocol/server-puppeteer` | Browser automation |
+
+### Data & Databases
+
+| Server | Package | What It Does |
+|--------|---------|-------------|
+| PostgreSQL | `@modelcontextprotocol/server-postgres` | SQL queries and schema inspection |
+| SQLite | `@modelcontextprotocol/server-sqlite` | Local database access |
+| Memory | `@modelcontextprotocol/server-memory` | Persistent key-value storage |
+
+### Communication & Productivity
+
+| Server | Package | What It Does |
+|--------|---------|-------------|
+| Slack | `@modelcontextprotocol/server-slack` | Read/send Slack messages |
+| Google Drive | `@modelcontextprotocol/server-gdrive` | File access and search |
+| Fetch | `@modelcontextprotocol/server-fetch` | HTTP requests and web scraping |
+
+### Specialized
+
+| Server | Package | What It Does |
+|--------|---------|-------------|
+| Brave Search | `@modelcontextprotocol/server-brave-search` | Web search integration |
+| Sentry | `@modelcontextprotocol/server-sentry` | Error tracking and debugging |
+| Raygun | `community/server-raygun` | Crash reporting |
+
+## Environment Variables and Secrets
+
+Never hardcode secrets in your MCP config. Use environment variables:
+
+```json
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+Then set the variable in your shell profile:
+
+```bash
+export GITHUB_TOKEN="ghp_your_token_here"
+```
+
+OpenClaw expands environment variable references at startup.
+
+## Building a Custom MCP Server
+
+If the existing servers don't cover your needs, building a custom one is straightforward. Here's a minimal example in TypeScript:
+
+```bash
+mkdir my-mcp-server && cd my-mcp-server
+npm init -y
+npm install @modelcontextprotocol/sdk
+```
+
+Create `index.ts`:
+
+```typescript
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+
+const server = new McpServer({
+  name: "my-custom-server",
+  version: "1.0.0",
+});
+
+server.tool(
+  "get_weather",
+  "Get current weather for a city",
+  { city: { type: "string", description: "City name" } },
+  async ({ city }) => {
+    const response = await fetch(
+      `https://api.weatherapi.com/v1/current.json?key=${process.env.WEATHER_API_KEY}&q=${city}`
+    );
+    const data = await response.json();
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Weather in ${city}: ${data.current.condition.text}, ${data.current.temp_c}°C`,
+        },
+      ],
+    };
+  }
+);
+
+const transport = new StdioServerTransport();
+await server.connect(transport);
+```
+
+Register it in your MCP config:
+
+```json
+{
+  "mcpServers": {
+    "weather": {
+      "command": "npx",
+      "args": ["tsx", "/path/to/my-mcp-server/index.ts"],
+      "env": {
+        "WEATHER_API_KEY": "${WEATHER_API_KEY}"
+      }
+    }
+  }
+}
+```
+
+## Remote MCP Servers (HTTP/SSE)
+
+For servers running on remote machines, use the HTTP transport:
+
+```json
+{
+  "mcpServers": {
+    "remote-db": {
+      "url": "https://mcp.example.com/db",
+      "headers": {
+        "Authorization": "Bearer ${MCP_REMOTE_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+Remote servers use Server-Sent Events (SSE) for real-time communication. Make sure your network allows the connection and that you trust the remote server.
+
+## Security Best Practices
+
+MCP servers can have broad access to your system. Follow these guidelines:
+
+- **Limit filesystem paths** — only expose directories the agent actually needs
+- **Use read-only mode** when write access is not required
+- **Rotate tokens** regularly for servers that use API keys
+- **Audit server code** before running community servers — check the source on GitHub
+- **Run in Docker** for additional isolation (see our [Docker setup guide](/tutorials/openclaw-docker-setup))
+- **Monitor logs** — OpenClaw logs all MCP tool invocations at `debug` level
+
+## Troubleshooting
+
+### Server not showing in `claw mcp list`
+
+Check that the config file path is correct and the JSON is valid:
+
+```bash
+cat ~/.config/openclaw/mcp.json | python3 -m json.tool
+```
+
+### "Command not found" errors
+
+The server binary needs to be in your PATH, or use an absolute path in the config:
+
+```json
+{
+  "command": "/usr/local/bin/npx",
+  "args": ["-y", "@modelcontextprotocol/server-filesystem", "/home/user"]
+}
+```
+
+### Server crashes on startup
+
+Check server logs:
+
+```bash
+claw mcp logs filesystem
+```
+
+Common causes: missing environment variables, incorrect arguments, or version mismatches.
+
+### Slow tool responses
+
+If an MCP server is slow, check whether the underlying service is responsive. For database servers, ensure your queries are efficient. For remote servers, check network latency.
+
+## Further Reading
+
+- [OpenClaw API Tutorial: Build Custom Integrations](/tutorials/openclaw-api-tutorial) — Use the OpenClaw API alongside MCP for advanced workflows
+- [How to Build Custom OpenClaw Skills](/tutorials/build-custom-openclaw-skills) — Package your MCP-powered integrations as reusable skills
+- [Getting Started with OpenClaw](/tutorials/getting-started-with-openclaw) — Initial setup and configuration basics

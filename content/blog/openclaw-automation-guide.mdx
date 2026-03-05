@@ -1,0 +1,307 @@
+---
+title: "OpenClaw Automation: Automate Repetitive Tasks with AI"
+description: "Automate repetitive tasks with OpenClaw. Practical recipes for file management, communication, development workflows, and scheduling with your AI agent."
+date: "2026-02-21"
+author: "Vibe OpenClaw Team"
+tags: ["automation", "productivity", "workflows", "recipes"]
+category: "automation"
+faqs:
+  - question: "What can I automate with OpenClaw?"
+    answer: "Almost any repetitive computer task: file organization, email triage, code review, test runs, deployments, data processing, report generation, and more. If you can describe the task in words, OpenClaw can likely automate it."
+  - question: "Do I need to know how to code to automate with OpenClaw?"
+    answer: "No. OpenClaw accepts natural language instructions. You can automate tasks by describing what you want in plain English. For more advanced automations with scheduling and error handling, basic familiarity with YAML and the command line is helpful."
+  - question: "How do I schedule automated tasks in OpenClaw?"
+    answer: "Use `claw schedule` to run tasks on a cron schedule. For example, `claw schedule 'Summarize my inbox' --cron '0 8 * * *'` runs a daily inbox summary at 8 AM. You can also use OpenClaw workflows for multi-step scheduled automations."
+---
+
+## What Can You Automate?
+
+OpenClaw turns repetitive tasks into one-line commands. Instead of manually performing the same steps every day, describe the task once and let your AI agent handle it.
+
+Common automation categories:
+
+- **File management** — organizing, renaming, converting, cleaning up
+- **Communication** — email summaries, Slack notifications, message drafting
+- **Development** — code review, testing, deployments, dependency updates
+- **Data processing** — report generation, data transformation, analysis
+- **System maintenance** — backups, monitoring, cleanup
+
+## Getting Started with Automation
+
+The simplest automation is a direct command:
+
+```bash
+claw run "Find all PNG files larger than 5MB in ~/Downloads and compress them to 80% quality"
+```
+
+OpenClaw figures out the steps: find the files, select a compression tool, process each file, and report the results.
+
+For tasks you repeat, save them as aliases:
+
+```bash
+claw alias create compress-images \
+  "Find all PNG files larger than 5MB in ~/Downloads and compress them to 80% quality"
+```
+
+Now run it anytime:
+
+```bash
+claw compress-images
+```
+
+## File Management Automation
+
+### Organize Downloads
+
+```bash
+claw run "Sort files in ~/Downloads into folders by type:
+- Images → ~/Downloads/Images
+- PDFs → ~/Downloads/Documents
+- Videos → ~/Downloads/Videos
+- Code files → ~/Downloads/Code
+- Everything else → ~/Downloads/Other
+Move files, don't copy them. Skip anything modified in the last hour."
+```
+
+### Clean Up Old Files
+
+```bash
+claw run "Find files in ~/Downloads older than 30 days.
+List them with sizes. Delete only files over 100MB after showing me the list."
+```
+
+### Batch Rename
+
+```bash
+claw run "Rename all files in ~/project/assets/ to lowercase
+with hyphens instead of spaces. Example: 'My Image.PNG' → 'my-image.png'"
+```
+
+### Convert File Formats
+
+```bash
+claw run "Convert all .docx files in ~/reports/ to PDF using pandoc.
+Keep the originals. Put PDFs in ~/reports/pdf/"
+```
+
+## Communication Automation
+
+### Daily Email Digest
+
+Create a scheduled summary of important emails:
+
+```bash
+claw schedule "Check my Gmail for unread emails from the last 12 hours.
+Summarize the 5 most important ones with sender, subject, and a one-line summary.
+Post the digest to my #personal Slack channel." \
+  --cron "0 8 * * *"
+```
+
+### Meeting Prep
+
+Before your morning meetings:
+
+```bash
+claw run "Prepare for my 10 AM standup:
+1. List my git commits from yesterday
+2. Check my open PRs and their review status
+3. List any JIRA tickets assigned to me that are in progress
+Format as bullet points I can read in 30 seconds."
+```
+
+### Draft Responses
+
+```bash
+claw run "Draft a response to the email from Sarah about the Q1 report.
+Acknowledge her concerns about the timeline, confirm we'll hit the
+March 15 deadline, and ask about the budget allocation.
+Professional but friendly tone. Keep it under 150 words."
+```
+
+## Development Workflow Automation
+
+### Automated Code Review
+
+```bash
+claw run "Review the changes in my current git branch compared to main.
+Focus on:
+- Security vulnerabilities
+- Performance issues
+- Missing error handling
+- Code style consistency
+Provide specific line references and suggested fixes."
+```
+
+### Dependency Updates
+
+```bash
+claw run "Check for outdated npm dependencies in ~/projects/myapp.
+List each outdated package with current and latest versions.
+For major version bumps, note any breaking changes from the changelog.
+Update only minor and patch versions, then run tests."
+```
+
+### Test Coverage Report
+
+```bash
+claw run "Run the test suite for ~/projects/myapp.
+Generate a coverage report. Identify the 5 files with the lowest
+coverage and suggest specific test cases that would improve coverage."
+```
+
+### PR Description Generator
+
+```bash
+claw run "Generate a PR description for my current branch.
+Include: summary of changes, list of files modified, testing done,
+and any breaking changes. Format in markdown."
+```
+
+### Changelog Generation
+
+```bash
+claw run "Generate a changelog for all commits since the last tag (v2.3.0).
+Group by: Features, Bug Fixes, Performance, Documentation.
+Use conventional commit messages to categorize. Output in CHANGELOG.md format."
+```
+
+## Data Processing Automation
+
+### CSV Analysis
+
+```bash
+claw run "Analyze sales-data.csv in ~/reports.
+Calculate: total revenue, average order value, top 5 products by revenue,
+month-over-month growth rate. Create a summary report."
+```
+
+### Log Analysis
+
+```bash
+claw run "Parse the Nginx access logs at /var/log/nginx/access.log
+from the last 24 hours. Report: total requests, unique IPs,
+top 10 requested URLs, any 5xx errors with details, and
+average response time."
+```
+
+### Report Generation
+
+```bash
+claw schedule "Generate a weekly project report:
+1. Git activity (commits, PRs merged, branches)
+2. Issue tracker stats (opened, closed, in progress)
+3. Deployment history
+4. Test suite health
+Save to ~/reports/weekly/week-$(date +%U).md" \
+  --cron "0 17 * * 5"
+```
+
+## Scheduling Tasks
+
+### One-Time Scheduled Tasks
+
+```bash
+# Run once at a specific time
+claw schedule "Send the deployment notification to #ops" --at "2026-03-01 14:00"
+```
+
+### Recurring Schedules
+
+```bash
+# Every weekday at 9 AM
+claw schedule "morning-briefing" --cron "0 9 * * 1-5"
+
+# Every hour during business hours
+claw schedule "health-check" --cron "0 9-17 * * 1-5"
+
+# First Monday of each month
+claw schedule "monthly-report" --cron "0 9 1-7 * 1"
+```
+
+### Managing Schedules
+
+```bash
+# List all scheduled tasks
+claw schedule list
+
+# View schedule details
+claw schedule show morning-briefing
+
+# Pause a schedule
+claw schedule pause morning-briefing
+
+# Resume a schedule
+claw schedule resume morning-briefing
+
+# Delete a schedule
+claw schedule delete morning-briefing
+```
+
+## Building Automation Chains
+
+For complex automations, chain multiple tasks:
+
+```bash
+claw run "Do the following in order:
+1. Pull the latest code in ~/projects/myapp
+2. Run the full test suite
+3. If tests pass, build the production bundle
+4. If build succeeds, deploy to staging
+5. Run smoke tests against staging
+6. Report results to #deployments on Slack
+
+If any step fails, stop and report the failure with details."
+```
+
+For reusable chains, create a [workflow](/tutorials/openclaw-workflow-automation) instead.
+
+## Best Practices
+
+### Be Specific
+
+Vague instructions produce inconsistent results. Instead of "clean up my files," specify what files, what "clean up" means, and what to do with them.
+
+### Start Small
+
+Test automations with dry runs before letting them modify files or send messages:
+
+```bash
+claw run "List all files you WOULD delete in ~/Downloads older than 30 days.
+Don't actually delete anything yet — just show me the list."
+```
+
+### Add Safety Guards
+
+For destructive operations, build in confirmations:
+
+```bash
+claw run "Find duplicate files in ~/photos. Show me the list grouped by content.
+For each group, keep the one with the earliest creation date and
+list the others you'd delete. Wait for my approval before deleting."
+```
+
+### Log Everything
+
+Enable logging for automated tasks:
+
+```bash
+claw run --log ~/logs/automation.log "Process the daily batch"
+```
+
+### Test Schedules First
+
+Run any scheduled task manually before setting the cron:
+
+```bash
+# Test it first
+claw run "Generate the weekly report"
+
+# Then schedule it
+claw schedule "Generate the weekly report" --cron "0 17 * * 5"
+```
+
+## Further Reading
+
+- [OpenClaw Workflow Automation](/tutorials/openclaw-workflow-automation) — Build complex multi-step automations with YAML workflows
+- [OpenClaw Prompt Engineering Tips](/blog/openclaw-prompt-engineering) — Write better prompts for more reliable automations
+- [Best OpenClaw Skills in 2026](/blog/best-openclaw-skills-2026) — Find skills that supercharge your automations

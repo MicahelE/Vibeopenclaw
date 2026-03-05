@@ -1,0 +1,313 @@
+---
+title: "OpenClaw Slack Bot Setup: Team AI Assistant in Minutes"
+description: "Set up an OpenClaw-powered Slack bot for your team. Covers Slack App creation, the Slack skill installation, commands, channel management, and security best practices."
+date: "2026-02-23"
+author: "Vibe OpenClaw Team"
+tags: ["slack", "bot", "integrations", "teams"]
+category: "integrations"
+faqs:
+  - question: "How does the OpenClaw Slack bot work?"
+    answer: "The Slack bot connects your OpenClaw instance to Slack via the official Slack skill. When someone mentions the bot or sends it a DM, the message is forwarded to OpenClaw for processing. OpenClaw executes the task and posts the response back to Slack. The bot runs on your infrastructure, so all data stays under your control."
+  - question: "Is the OpenClaw Slack bot free?"
+    answer: "Yes. The Slack skill is free and open-source. You need a free Slack App (created in your workspace) and a running OpenClaw instance. The only costs are your LLM API usage fees, which depend on how actively your team uses the bot."
+  - question: "Can I restrict which channels the bot responds in?"
+    answer: "Yes. The Slack skill supports channel allowlists and denylists. You can restrict the bot to specific channels, prevent it from responding in sensitive channels, and configure different permissions per channel."
+---
+
+## Overview
+
+A Slack bot powered by OpenClaw gives your team an AI assistant directly in your messaging platform. Team members can ask questions, run automations, and trigger workflows without leaving Slack.
+
+This guide walks you through creating a Slack App, installing the OpenClaw Slack skill, and configuring the bot for your team.
+
+## Prerequisites
+
+- A running OpenClaw instance (local or [self-hosted](/tutorials/openclaw-self-hosting-guide))
+- Admin access to your Slack workspace
+- Node.js 20+ installed
+
+## Step 1: Create a Slack App
+
+1. Go to [api.slack.com/apps](https://api.slack.com/apps) and click **Create New App**
+2. Choose **From scratch**
+3. Name your app (e.g., "OpenClaw Bot") and select your workspace
+4. Click **Create App**
+
+### Configure Bot Permissions
+
+Navigate to **OAuth & Permissions** and add these **Bot Token Scopes**:
+
+| Scope | Purpose |
+|-------|---------|
+| `chat:write` | Send messages |
+| `app_mentions:read` | Respond to @mentions |
+| `im:history` | Read DM messages |
+| `im:write` | Send DM responses |
+| `channels:history` | Read channel messages (when mentioned) |
+| `channels:read` | List channels |
+| `users:read` | Identify who sent a message |
+
+### Enable Events
+
+Go to **Event Subscriptions** and enable events. You will set the Request URL after installing the skill.
+
+Subscribe to these **bot events**:
+
+- `app_mention` — triggers when someone @mentions the bot
+- `message.im` — triggers on direct messages to the bot
+
+### Install to Workspace
+
+Go to **Install App** and click **Install to Workspace**. Authorize the permissions.
+
+Save the **Bot User OAuth Token** (starts with `xoxb-`) and the **Signing Secret** (found under Basic Information).
+
+## Step 2: Install the OpenClaw Slack Skill
+
+```bash
+claw skill install slack-bot
+```
+
+During installation, you will be prompted for:
+
+- **Bot Token**: Your `xoxb-` token from step 1
+- **Signing Secret**: From the Slack App's Basic Information page
+- **Port**: The port for the webhook endpoint (default: 3100)
+
+## Step 3: Configure the Webhook URL
+
+The Slack skill starts a webhook server. You need to expose it to the internet so Slack can send events.
+
+### For Local Development
+
+Use a tunnel service:
+
+```bash
+# Using ngrok
+ngrok http 3100
+```
+
+Copy the HTTPS URL and set it as the Request URL in Slack's Event Subscriptions:
+
+```
+https://your-ngrok-url.ngrok.io/slack/events
+```
+
+### For Production
+
+If your OpenClaw instance is publicly accessible (e.g., behind Caddy or Nginx), add a route for the Slack webhook:
+
+```
+# Caddyfile
+openclaw.yourdomain.com {
+    handle /slack/* {
+        reverse_proxy localhost:3100
+    }
+    handle {
+        reverse_proxy localhost:3000
+    }
+}
+```
+
+Set the Request URL to:
+
+```
+https://openclaw.yourdomain.com/slack/events
+```
+
+Slack will send a verification challenge. If the skill is running, it responds automatically.
+
+## Step 4: Configure the Bot
+
+Edit the Slack skill configuration:
+
+```bash
+claw skill config slack-bot
+```
+
+Or edit directly at `~/.config/openclaw/skills/slack-bot/config.yaml`:
+
+```yaml
+# Bot identity
+bot_name: "OpenClaw"
+bot_emoji: ":robot_face:"
+
+# Channel restrictions
+channels:
+  allowlist:
+    - "#dev-team"
+    - "#engineering"
+    - "#openclaw-bot"
+  denylist:
+    - "#general"
+    - "#announcements"
+
+# Response behavior
+response:
+  thread_replies: true          # Reply in threads by default
+  max_response_length: 4000     # Slack message limit
+  typing_indicator: true        # Show "typing..." while processing
+
+# Permissions
+permissions:
+  allow_commands: true           # Allow shell command execution
+  allow_file_access: false       # Restrict file system access
+  allowed_skills:                # Which skills the bot can use
+    - "git-helper"
+    - "jira-integration"
+    - "code-reviewer"
+```
+
+## Step 5: Test the Bot
+
+In Slack, mention the bot in an allowed channel:
+
+```
+@OpenClaw What is the current time?
+```
+
+Or send a direct message:
+
+```
+Summarize the latest commits in our main repo
+```
+
+The bot should respond within a few seconds.
+
+## Available Commands
+
+The Slack bot responds to natural language, but also supports structured commands:
+
+| Command | Description |
+|---------|-------------|
+| `@OpenClaw help` | Show available commands |
+| `@OpenClaw status` | Check OpenClaw system status |
+| `@OpenClaw run [task]` | Execute a specific task |
+| `@OpenClaw workflow [name]` | Trigger a named workflow |
+| `@OpenClaw skills` | List available skills |
+
+### Custom Slash Commands
+
+Register slash commands in your Slack App for quicker access:
+
+1. Go to **Slash Commands** in your Slack App settings
+2. Create a new command (e.g., `/claw`)
+3. Set the Request URL to `https://openclaw.yourdomain.com/slack/commands`
+
+Now your team can type:
+
+```
+/claw run tests for the auth module
+```
+
+## Channel Management
+
+### Per-Channel Configuration
+
+Different channels can have different capabilities:
+
+```yaml
+channel_overrides:
+  "#dev-team":
+    allow_commands: true
+    allow_file_access: true
+    allowed_skills: ["*"]
+  "#support":
+    allow_commands: false
+    allow_file_access: false
+    allowed_skills: ["faq-responder"]
+```
+
+### Rate Limiting
+
+Prevent bot abuse with rate limits:
+
+```yaml
+rate_limits:
+  per_user:
+    requests: 20
+    period: "1h"
+  per_channel:
+    requests: 100
+    period: "1h"
+  global:
+    requests: 500
+    period: "1h"
+```
+
+### User Permissions
+
+Restrict who can use the bot:
+
+```yaml
+user_permissions:
+  admins:
+    - "U0123456789"     # Slack user IDs
+  allowed_users: "*"     # Everyone in the workspace
+  blocked_users: []
+```
+
+## Security Best Practices
+
+### Token Security
+
+- Store tokens in environment variables, never in code
+- Rotate the Bot Token periodically
+- Use the Signing Secret to verify incoming requests
+
+### Principle of Least Privilege
+
+- Only grant the bot scopes it actually needs
+- Restrict channel access to relevant channels
+- Limit which skills the bot can invoke
+
+### Audit Trail
+
+Enable logging for all bot interactions:
+
+```yaml
+logging:
+  enabled: true
+  log_file: /var/log/openclaw/slack-bot.log
+  include:
+    - user
+    - channel
+    - command
+    - response_time
+```
+
+### Data Handling
+
+- The bot processes messages on your infrastructure
+- No message content is sent to Slack's servers beyond what Slack already handles
+- Set auto-delete for conversation history if compliance requires it
+
+## Troubleshooting
+
+### Bot not responding to mentions
+
+1. Verify the Event Subscription URL is correct and verified
+2. Check that `app_mention` event is subscribed
+3. Confirm the channel is not in the denylist
+4. Check OpenClaw logs: `claw skill logs slack-bot`
+
+### "Invalid signature" errors
+
+The Signing Secret may be incorrect. Re-copy it from the Slack App's Basic Information page.
+
+### Slow responses
+
+LLM API latency is usually the bottleneck. Consider:
+- Using a faster model for Slack interactions
+- Enabling response caching for common questions
+- Reducing the max context size for the bot
+
+### Message truncation
+
+Slack has a 4,000 character limit per message. Long responses are automatically split into multiple messages. Adjust `max_response_length` if needed.
+
+## Further Reading
+
+- [OpenClaw WhatsApp Bot Setup](/tutorials/openclaw-whatsapp-bot-setup) — Connect OpenClaw to WhatsApp for personal AI messaging
+- [OpenClaw Workflow Automation](/tutorials/openclaw-workflow-automation) — Trigger workflows from Slack commands
+- [OpenClaw for Enterprise](/blog/openclaw-enterprise-guide) — Team deployment and management

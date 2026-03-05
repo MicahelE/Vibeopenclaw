@@ -1,0 +1,294 @@
+---
+title: "How to Run OpenClaw in Docker: Complete Setup Guide (2026)"
+description: "Learn how to run OpenClaw in Docker with Docker Compose. Covers setup, volumes, persistence, environment variables, and troubleshooting for Mac, Linux, and Windows."
+date: "2026-03-04"
+author: "Vibe OpenClaw Team"
+tags: ["docker", "setup", "deployment", "self-hosting"]
+category: "deployment"
+faqs:
+  - question: "Should I run OpenClaw in Docker or install it natively?"
+    answer: "Docker is ideal for consistent environments, easy updates, and isolation. Native installation offers slightly better performance and simpler debugging. If you plan to self-host or run OpenClaw on a server, Docker is strongly recommended."
+  - question: "What are the system requirements for running OpenClaw in Docker?"
+    answer: "You need Docker Engine 24+ and at least 4GB of RAM (8GB recommended). The OpenClaw Docker image is approximately 800MB. On macOS, Docker Desktop 4.25+ is recommended for best performance."
+  - question: "How do I persist data when running OpenClaw in Docker?"
+    answer: "Use Docker volumes or bind mounts to persist your configuration, skills, and data directories. The Docker Compose example in this guide maps all three directories to your host machine so nothing is lost when containers restart."
+  - question: "Can I run OpenClaw in Docker on a Raspberry Pi?"
+    answer: "Yes, OpenClaw publishes multi-arch Docker images including ARM64. A Raspberry Pi 4 with 4GB+ RAM can run OpenClaw in Docker, though performance will be limited to local models or API-based providers."
+---
+
+## Why Run OpenClaw in Docker?
+
+Running OpenClaw in Docker gives you a reproducible, isolated environment that works identically across machines. No more "works on my machine" problems — your configuration, dependencies, and runtime are all packaged together.
+
+Key benefits of the Docker approach:
+
+- **Consistent environment** across development, staging, and production
+- **Easy updates** — pull the latest image and restart
+- **Isolation** — OpenClaw runs in its own container without affecting your host system
+- **Simple rollbacks** — pin to a specific image tag to revert anytime
+- **Multi-instance support** — run multiple OpenClaw instances with different configs
+
+## Prerequisites
+
+Before you start, make sure you have:
+
+- **Docker Engine 24+** (or Docker Desktop 4.25+ on macOS/Windows)
+- **Docker Compose v2** (included with Docker Desktop; install separately on Linux)
+- An API key from your LLM provider (OpenAI, Anthropic, or a local model URL)
+
+Verify your Docker installation:
+
+```bash
+docker --version
+docker compose version
+```
+
+## Quick Start with Docker Run
+
+The fastest way to get OpenClaw running in Docker:
+
+```bash
+docker run -d \
+  --name openclaw \
+  -p 3000:3000 \
+  -e OPENCLAW_API_KEY=your-api-key-here \
+  -e OPENCLAW_LLM_PROVIDER=anthropic \
+  -v openclaw-config:/home/openclaw/.config/openclaw \
+  -v openclaw-data:/home/openclaw/.local/share/openclaw \
+  ghcr.io/openclaw/openclaw:latest
+```
+
+This starts OpenClaw with the web UI on port 3000. However, for production use, Docker Compose is the better approach.
+
+## Docker Compose Setup
+
+Create a `docker-compose.yml` file in your project directory:
+
+```yaml
+version: "3.8"
+
+services:
+  openclaw:
+    image: ghcr.io/openclaw/openclaw:latest
+    container_name: openclaw
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - OPENCLAW_API_KEY=${OPENCLAW_API_KEY}
+      - OPENCLAW_LLM_PROVIDER=${OPENCLAW_LLM_PROVIDER:-anthropic}
+      - OPENCLAW_LOG_LEVEL=${OPENCLAW_LOG_LEVEL:-info}
+      - OPENCLAW_MAX_CONTEXT=${OPENCLAW_MAX_CONTEXT:-8192}
+    volumes:
+      - ./config:/home/openclaw/.config/openclaw
+      - ./data:/home/openclaw/.local/share/openclaw
+      - ./skills:/home/openclaw/.local/share/openclaw/skills
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+```
+
+Create a `.env` file alongside it:
+
+```bash
+OPENCLAW_API_KEY=sk-your-key-here
+OPENCLAW_LLM_PROVIDER=anthropic
+OPENCLAW_LOG_LEVEL=info
+OPENCLAW_MAX_CONTEXT=8192
+```
+
+Start the stack:
+
+```bash
+docker compose up -d
+```
+
+## Volumes and Data Persistence
+
+The three volume mounts ensure your data survives container restarts:
+
+| Mount | Purpose | Contents |
+|-------|---------|----------|
+| `./config` | Configuration | `config.yaml`, API keys, permissions |
+| `./data` | Application data | Logs, conversation history, caches |
+| `./skills` | Installed skills | Skill packages and manifests |
+
+To back up your entire OpenClaw state, simply copy these three directories:
+
+```bash
+tar -czf openclaw-backup-$(date +%Y%m%d).tar.gz config/ data/ skills/
+```
+
+## Platform-Specific Notes
+
+### macOS (Docker Desktop)
+
+Docker Desktop on macOS uses a Linux VM under the hood. For best performance:
+
+- Allocate at least 4GB RAM to Docker Desktop (Preferences → Resources)
+- Enable VirtioFS for faster file sharing (Preferences → General)
+- If using Apple Silicon, the ARM64 image is pulled automatically
+
+```bash
+# Check your architecture
+docker inspect ghcr.io/openclaw/openclaw:latest | grep Architecture
+```
+
+### Linux
+
+Docker runs natively on Linux, giving you the best performance:
+
+```bash
+# Install Docker Engine (Ubuntu/Debian)
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+
+# Install Docker Compose plugin
+sudo apt install docker-compose-plugin
+```
+
+File permissions matter on Linux. Make sure the mounted directories are writable:
+
+```bash
+mkdir -p config data skills
+chmod 755 config data skills
+```
+
+### Windows (Docker Desktop / WSL2)
+
+On Windows, Docker Desktop with WSL2 backend is recommended:
+
+- Enable WSL2 backend in Docker Desktop settings
+- Store your `docker-compose.yml` inside the WSL2 filesystem for better I/O performance
+- Avoid mounting Windows NTFS paths — use WSL2 paths instead
+
+```bash
+# Inside WSL2
+cd ~/openclaw
+docker compose up -d
+```
+
+## Environment Variables Reference
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OPENCLAW_API_KEY` | — | Your LLM provider API key (required) |
+| `OPENCLAW_LLM_PROVIDER` | `anthropic` | LLM provider: `anthropic`, `openai`, `ollama` |
+| `OPENCLAW_LOG_LEVEL` | `info` | Log verbosity: `debug`, `info`, `warn`, `error` |
+| `OPENCLAW_MAX_CONTEXT` | `8192` | Max context window tokens |
+| `OPENCLAW_PORT` | `3000` | Web UI port |
+| `OPENCLAW_SKILL_DIR` | `/home/openclaw/.local/share/openclaw/skills` | Custom skill directory |
+| `OPENCLAW_DISABLE_TELEMETRY` | `false` | Disable anonymous usage telemetry |
+
+## Running with Local Models (Ollama)
+
+To use OpenClaw with Ollama for fully local AI:
+
+```yaml
+version: "3.8"
+
+services:
+  openclaw:
+    image: ghcr.io/openclaw/openclaw:latest
+    container_name: openclaw
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - OPENCLAW_LLM_PROVIDER=ollama
+      - OPENCLAW_OLLAMA_URL=http://ollama:11434
+      - OPENCLAW_OLLAMA_MODEL=llama3
+    volumes:
+      - ./config:/home/openclaw/.config/openclaw
+      - ./data:/home/openclaw/.local/share/openclaw
+    depends_on:
+      - ollama
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+
+volumes:
+  ollama-models:
+```
+
+Pull a model and start:
+
+```bash
+docker compose up -d
+docker exec ollama ollama pull llama3
+```
+
+## Updating OpenClaw
+
+To update to the latest version:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+To pin a specific version for stability:
+
+```yaml
+image: ghcr.io/openclaw/openclaw:v2.4.1
+```
+
+## Troubleshooting
+
+### Container exits immediately
+
+Check the logs:
+
+```bash
+docker compose logs openclaw
+```
+
+Common causes: missing API key, invalid config file, or port conflict.
+
+### Cannot connect to web UI
+
+Verify the container is running and the port mapping is correct:
+
+```bash
+docker compose ps
+curl http://localhost:3000/health
+```
+
+### Skills not loading
+
+Ensure the skills volume is mounted correctly and has the right permissions:
+
+```bash
+docker exec openclaw ls -la /home/openclaw/.local/share/openclaw/skills
+```
+
+### High memory usage
+
+Reduce the context window size and disable unused features:
+
+```bash
+OPENCLAW_MAX_CONTEXT=4096
+```
+
+### Permission denied on mounted volumes (Linux)
+
+Match the container user UID to your host user:
+
+```bash
+docker exec openclaw id
+# Then on host:
+sudo chown -R 1000:1000 config/ data/ skills/
+```
+
+## Further Reading
+
+- [Self-Hosting OpenClaw: Docker Compose + Security Hardening Guide](/tutorials/openclaw-self-hosting-guide) — Add reverse proxies, SSL, and security hardening
+- [Getting Started with OpenClaw](/tutorials/getting-started-with-openclaw) — Native installation and initial configuration
+- [Is OpenClaw Safe? A Complete Security Guide](/blog/is-openclaw-safe) — Understand the security model and best practices

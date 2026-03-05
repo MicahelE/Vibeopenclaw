@@ -1,0 +1,396 @@
+---
+title: "OpenClaw API Tutorial: Build Custom Integrations Step-by-Step"
+description: "Learn to use the OpenClaw API for custom integrations. Covers REST endpoints, authentication, webhooks, error handling, and building a real-world integration."
+date: "2026-03-02"
+author: "Vibe OpenClaw Team"
+tags: ["api", "development", "integrations", "advanced"]
+category: "development"
+faqs:
+  - question: "How do I access the OpenClaw API?"
+    answer: "The OpenClaw API is available when you run OpenClaw with the web server enabled (the default). It listens on port 3000 and provides REST endpoints at /api/v1/. Authentication uses API tokens generated via `claw token create`."
+  - question: "Does the OpenClaw API require authentication?"
+    answer: "Yes. All API endpoints require a Bearer token. Generate one with `claw token create --name my-integration`. Tokens can be scoped to specific permissions (read-only, execute, admin) for security."
+  - question: "What are the OpenClaw API rate limits?"
+    answer: "The default rate limit is 60 requests per minute per token. Self-hosted instances can adjust this in config.yaml under api.rate_limit. Enterprise deployments typically increase this to 300-600 requests per minute."
+  - question: "Can I use webhooks with OpenClaw?"
+    answer: "Yes. OpenClaw supports outgoing webhooks that fire on events like task completion, skill execution, and errors. Configure them in the web UI under Settings → Webhooks, or via the API at /api/v1/webhooks."
+---
+
+## Overview
+
+The OpenClaw API lets you build custom integrations that interact with your OpenClaw instance programmatically. Whether you want to trigger tasks from a CI/CD pipeline, build a custom dashboard, or integrate with internal tools, the API gives you full control.
+
+This tutorial walks you through authentication, the core endpoints, webhooks, and a complete integration example.
+
+## API Architecture
+
+OpenClaw exposes a RESTful API on the same port as the web UI (default: 3000). All API endpoints are versioned under `/api/v1/`.
+
+The API follows standard REST conventions:
+- JSON request and response bodies
+- HTTP status codes for success and error states
+- Bearer token authentication
+- Consistent pagination with `limit` and `offset` parameters
+
+## Authentication
+
+### Generating an API Token
+
+Create a token using the CLI:
+
+```bash
+# Full access token
+claw token create --name "my-integration"
+
+# Read-only token
+claw token create --name "dashboard" --scope read
+
+# Execute-only token (can run tasks but not change config)
+claw token create --name "ci-pipeline" --scope execute
+```
+
+The token is displayed once — store it securely.
+
+### Using the Token
+
+Include the token in the `Authorization` header:
+
+```bash
+curl -H "Authorization: Bearer ocl_your_token_here" \
+  http://localhost:3000/api/v1/status
+```
+
+### Token Management
+
+List and revoke tokens:
+
+```bash
+# List all tokens
+claw token list
+
+# Revoke a token
+claw token revoke --name "my-integration"
+```
+
+## Core REST Endpoints
+
+### System Status
+
+```bash
+GET /api/v1/status
+```
+
+Returns system health, version, uptime, and connected MCP servers:
+
+```bash
+curl -s -H "Authorization: Bearer $TOKEN" \
+  http://localhost:3000/api/v1/status | jq
+```
+
+### Running Tasks
+
+The primary endpoint for executing tasks:
+
+```bash
+POST /api/v1/tasks
+Content-Type: application/json
+
+{
+  "prompt": "Summarize the latest git commits in my project",
+  "options": {
+    "model": "claude-sonnet-4-20250514",
+    "max_tokens": 4096,
+    "working_directory": "/home/user/projects/myapp"
+  }
+}
+```
+
+This returns a task ID for tracking:
+
+```json
+{
+  "id": "task_abc123",
+  "status": "running",
+  "created_at": "2026-03-02T10:30:00Z"
+}
+```
+
+### Checking Task Status
+
+```bash
+GET /api/v1/tasks/:id
+```
+
+Poll for completion or use webhooks for async notification:
+
+```bash
+curl -s -H "Authorization: Bearer $TOKEN" \
+  http://localhost:3000/api/v1/tasks/task_abc123 | jq '.status'
+```
+
+### Task Results
+
+Once a task completes:
+
+```bash
+GET /api/v1/tasks/:id/result
+```
+
+Returns the full output including any files created or modified.
+
+### Listing Tasks
+
+```bash
+GET /api/v1/tasks?limit=20&offset=0&status=completed
+```
+
+Supports filtering by status (`running`, `completed`, `failed`), date range, and search.
+
+### Skills Management
+
+```bash
+# List installed skills
+GET /api/v1/skills
+
+# Install a skill
+POST /api/v1/skills
+{
+  "name": "openclaw-skill-git-helper",
+  "version": "latest"
+}
+
+# Remove a skill
+DELETE /api/v1/skills/:name
+```
+
+### Configuration
+
+```bash
+# Get current config
+GET /api/v1/config
+
+# Update config
+PATCH /api/v1/config
+{
+  "model": {
+    "provider": "anthropic",
+    "max_context": 8192
+  }
+}
+```
+
+## Webhooks
+
+Webhooks let OpenClaw notify your services when events occur, eliminating the need for polling.
+
+### Setting Up Webhooks
+
+```bash
+POST /api/v1/webhooks
+Content-Type: application/json
+
+{
+  "url": "https://your-server.com/openclaw-webhook",
+  "events": ["task.completed", "task.failed", "skill.installed"],
+  "secret": "your-webhook-secret"
+}
+```
+
+### Webhook Events
+
+| Event | Description |
+|-------|-------------|
+| `task.completed` | A task finished successfully |
+| `task.failed` | A task encountered an error |
+| `task.started` | A new task began execution |
+| `skill.installed` | A skill was installed |
+| `skill.removed` | A skill was removed |
+| `system.error` | A system-level error occurred |
+
+### Webhook Payload
+
+Each webhook POST includes a JSON body and a signature header:
+
+```json
+{
+  "event": "task.completed",
+  "timestamp": "2026-03-02T10:35:00Z",
+  "data": {
+    "task_id": "task_abc123",
+    "prompt": "Summarize the latest git commits",
+    "status": "completed",
+    "duration_ms": 4523
+  }
+}
+```
+
+### Verifying Webhook Signatures
+
+The `X-OpenClaw-Signature` header contains an HMAC-SHA256 signature. Verify it server-side:
+
+```javascript
+import crypto from "crypto";
+
+function verifyWebhook(payload, signature, secret) {
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(payload)
+    .digest("hex");
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expected)
+  );
+}
+```
+
+## Building a Custom Integration: Slack Notifications
+
+Here is a complete example that sends Slack notifications when OpenClaw tasks complete.
+
+### Step 1: Create the Webhook Receiver
+
+```javascript
+import express from "express";
+import crypto from "crypto";
+
+const app = express();
+app.use(express.json());
+
+const WEBHOOK_SECRET = process.env.OPENCLAW_WEBHOOK_SECRET;
+const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
+
+app.post("/openclaw-webhook", async (req, res) => {
+  // Verify signature
+  const signature = req.headers["x-openclaw-signature"];
+  const expected = crypto
+    .createHmac("sha256", WEBHOOK_SECRET)
+    .update(JSON.stringify(req.body))
+    .digest("hex");
+
+  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+    return res.status(401).json({ error: "Invalid signature" });
+  }
+
+  const { event, data } = req.body;
+
+  if (event === "task.completed") {
+    await fetch(SLACK_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: `OpenClaw task completed: "${data.prompt}" (${data.duration_ms}ms)`,
+      }),
+    });
+  }
+
+  res.json({ received: true });
+});
+
+app.listen(4000, () => console.log("Webhook receiver on port 4000"));
+```
+
+### Step 2: Register the Webhook
+
+```bash
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  http://localhost:3000/api/v1/webhooks \
+  -d '{
+    "url": "http://localhost:4000/openclaw-webhook",
+    "events": ["task.completed", "task.failed"],
+    "secret": "your-secret-here"
+  }'
+```
+
+### Step 3: Test It
+
+```bash
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  http://localhost:3000/api/v1/tasks \
+  -d '{"prompt": "List the files in the current directory"}'
+```
+
+You should see a Slack notification when the task completes.
+
+## Error Handling
+
+The API uses standard HTTP status codes:
+
+| Code | Meaning |
+|------|---------|
+| `200` | Success |
+| `201` | Created |
+| `400` | Bad request (invalid parameters) |
+| `401` | Unauthorized (invalid or missing token) |
+| `403` | Forbidden (token lacks required scope) |
+| `404` | Not found |
+| `429` | Rate limited |
+| `500` | Internal server error |
+
+Error responses include a JSON body:
+
+```json
+{
+  "error": {
+    "code": "rate_limited",
+    "message": "Rate limit exceeded. Try again in 45 seconds.",
+    "retry_after": 45
+  }
+}
+```
+
+### Handling Rate Limits
+
+Implement exponential backoff:
+
+```javascript
+async function apiCall(url, options, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    const response = await fetch(url, options);
+    if (response.status === 429) {
+      const retryAfter = response.headers.get("Retry-After") || 60;
+      await new Promise((r) => setTimeout(r, retryAfter * 1000));
+      continue;
+    }
+    return response;
+  }
+  throw new Error("Max retries exceeded");
+}
+```
+
+## SDKs and Client Libraries
+
+While you can use the API directly with any HTTP client, community SDKs simplify integration:
+
+```bash
+# JavaScript/TypeScript
+npm install openclaw-sdk
+
+# Python
+pip install openclaw-sdk
+```
+
+Example with the JavaScript SDK:
+
+```javascript
+import { OpenClaw } from "openclaw-sdk";
+
+const client = new OpenClaw({
+  baseUrl: "http://localhost:3000",
+  token: process.env.OPENCLAW_TOKEN,
+});
+
+const task = await client.tasks.create({
+  prompt: "Analyze the error logs from today",
+});
+
+const result = await client.tasks.waitForCompletion(task.id);
+console.log(result.output);
+```
+
+## Further Reading
+
+- [OpenClaw MCP Server Guide](/tutorials/openclaw-mcp-server-guide) — Extend OpenClaw with external tools via MCP
+- [How to Build Custom OpenClaw Skills](/tutorials/build-custom-openclaw-skills) — Package your API integrations as reusable skills
+- [OpenClaw for Enterprise](/blog/openclaw-enterprise-guide) — Scaling the API for team and enterprise deployments

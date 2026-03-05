@@ -1,0 +1,403 @@
+---
+title: "How to Build Custom OpenClaw Skills: Developer Guide"
+description: "Build custom OpenClaw skills from scratch. Covers skill anatomy, the manifest file, permissions, testing, and publishing to ClawHub for the community."
+date: "2026-02-24"
+author: "Vibe OpenClaw Team"
+tags: ["skills", "development", "advanced", "clawhub"]
+category: "development"
+faqs:
+  - question: "What programming language are OpenClaw skills written in?"
+    answer: "OpenClaw skills can be written in JavaScript, TypeScript, Python, or any language that produces an executable. Most community skills use TypeScript for type safety and tight integration with the OpenClaw SDK."
+  - question: "How do I test an OpenClaw skill locally?"
+    answer: "Use `claw skill dev --path ./my-skill` to run your skill in development mode. This loads the skill from your local directory with hot-reloading enabled. Use `claw skill test --path ./my-skill` to run the skill's test suite."
+  - question: "How do I publish a skill to ClawHub?"
+    answer: "First, ensure your skill passes validation with `claw skill validate`. Then run `claw skill publish` from your skill directory. You will need a ClawHub account (free) and must agree to the developer terms. Published skills go through a brief automated security scan before becoming available."
+---
+
+## What Are OpenClaw Skills?
+
+Skills are packaged capabilities that extend what OpenClaw can do. Each skill provides one or more actions — sending messages, interacting with APIs, processing data, or automating workflows. The OpenClaw ecosystem has over 4,000 published skills, and building your own is straightforward.
+
+## Skill Anatomy
+
+Every skill is a directory with this structure:
+
+```
+my-skill/
+├── manifest.yaml      # Metadata, permissions, configuration
+├── index.ts           # Main entry point
+├── package.json       # Dependencies
+├── README.md          # Documentation
+└── tests/
+    └── index.test.ts  # Tests
+```
+
+## Development Environment
+
+### Prerequisites
+
+- Node.js 20+ (or Bun 1.1+)
+- OpenClaw installed locally
+- The OpenClaw SDK
+
+### Scaffold a New Skill
+
+```bash
+claw skill create my-skill
+cd my-skill
+```
+
+This generates the boilerplate with all required files.
+
+### Install the SDK
+
+```bash
+npm install @openclaw/skill-sdk
+```
+
+## Creating a Skill from Scratch
+
+Let's build a skill that checks the status of a website and reports uptime.
+
+### Step 1: Define the Manifest
+
+Create `manifest.yaml`:
+
+```yaml
+name: "site-monitor"
+version: "1.0.0"
+description: "Check website status and report uptime"
+author: "yourname"
+license: "MIT"
+
+entry: "index.ts"
+
+skills:
+  - name: "check_site"
+    description: "Check if a website is up and measure response time"
+    parameters:
+      - name: "url"
+        type: "string"
+        description: "The URL to check"
+        required: true
+      - name: "timeout"
+        type: "number"
+        description: "Timeout in milliseconds"
+        required: false
+        default: 5000
+
+permissions:
+  network:
+    - "*.example.com"
+    - "*.yourdomain.com"
+  filesystem: []
+  shell: []
+```
+
+### Step 2: Implement the Skill
+
+Create `index.ts`:
+
+```typescript
+import { defineSkill, SkillContext } from "@openclaw/skill-sdk";
+
+interface CheckSiteParams {
+  url: string;
+  timeout?: number;
+}
+
+export default defineSkill({
+  name: "site-monitor",
+
+  skills: {
+    check_site: async (
+      params: CheckSiteParams,
+      context: SkillContext
+    ) => {
+      const { url, timeout = 5000 } = params;
+      const start = Date.now();
+
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+        const response = await fetch(url, {
+          method: "HEAD",
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+        const duration = Date.now() - start;
+
+        return {
+          status: "up",
+          statusCode: response.status,
+          responseTime: `${duration}ms`,
+          url,
+          checkedAt: new Date().toISOString(),
+        };
+      } catch (error) {
+        const duration = Date.now() - start;
+
+        return {
+          status: "down",
+          error: error instanceof Error ? error.message : "Unknown error",
+          responseTime: `${duration}ms`,
+          url,
+          checkedAt: new Date().toISOString(),
+        };
+      }
+    },
+  },
+});
+```
+
+### Step 3: Add Tests
+
+Create `tests/index.test.ts`:
+
+```typescript
+import { describe, it, expect } from "vitest";
+import { createTestContext } from "@openclaw/skill-sdk/testing";
+import skill from "../index";
+
+describe("site-monitor", () => {
+  it("should report a site as up", async () => {
+    const context = createTestContext();
+    const result = await skill.skills.check_site(
+      { url: "https://httpbin.org/get" },
+      context
+    );
+
+    expect(result.status).toBe("up");
+    expect(result.statusCode).toBe(200);
+    expect(result.responseTime).toBeDefined();
+  });
+
+  it("should report a site as down for invalid URLs", async () => {
+    const context = createTestContext();
+    const result = await skill.skills.check_site(
+      { url: "https://this-does-not-exist.invalid" },
+      context
+    );
+
+    expect(result.status).toBe("down");
+    expect(result.error).toBeDefined();
+  });
+
+  it("should respect timeout", async () => {
+    const context = createTestContext();
+    const result = await skill.skills.check_site(
+      { url: "https://httpbin.org/delay/10", timeout: 1000 },
+      context
+    );
+
+    expect(result.status).toBe("down");
+  });
+});
+```
+
+Run tests:
+
+```bash
+npm test
+```
+
+## The Manifest File in Detail
+
+The manifest is the most important file in your skill. It tells OpenClaw what your skill does and what it needs access to.
+
+### Required Fields
+
+```yaml
+name: "my-skill"          # Unique name (lowercase, hyphens)
+version: "1.0.0"          # Semver version
+description: "What it does"
+author: "your-username"
+entry: "index.ts"         # Main file
+```
+
+### Skills Definition
+
+Each action your skill provides:
+
+```yaml
+skills:
+  - name: "action_name"
+    description: "What this action does (shown to the AI agent)"
+    parameters:
+      - name: "param1"
+        type: "string"       # string, number, boolean, array, object
+        description: "What this parameter is for"
+        required: true
+      - name: "param2"
+        type: "number"
+        required: false
+        default: 100
+```
+
+### Configuration
+
+For skills that need user-provided settings:
+
+```yaml
+config:
+  - name: "api_key"
+    type: "string"
+    description: "Your service API key"
+    required: true
+    secret: true           # Stored encrypted
+  - name: "region"
+    type: "string"
+    description: "Service region"
+    required: false
+    default: "us-east-1"
+```
+
+Users configure these during installation:
+
+```bash
+claw skill install site-monitor
+# Prompts for api_key and region
+```
+
+## Permissions
+
+Permissions are critical for security. OpenClaw enforces them at runtime — your skill cannot access resources beyond what the manifest declares.
+
+```yaml
+permissions:
+  network:
+    - "api.example.com"          # Specific domain
+    - "*.internal.company.com"   # Wildcard subdomain
+  filesystem:
+    - read: "~/.config/myapp/"   # Read access to a directory
+    - write: "/tmp/my-skill/"    # Write access to a directory
+  shell:
+    - "git status"               # Specific commands allowed
+    - "npm test"
+```
+
+Users see these permissions during installation and must approve them.
+
+## Advanced Skill Features
+
+### Skill Context
+
+The `SkillContext` object provides access to OpenClaw internals:
+
+```typescript
+async (params, context: SkillContext) => {
+  // Access user config
+  const apiKey = context.config.get("api_key");
+
+  // Log messages
+  context.log.info("Processing request");
+
+  // Access OpenClaw settings
+  const model = context.settings.model;
+
+  // Store persistent data
+  await context.storage.set("last_check", Date.now());
+  const lastCheck = await context.storage.get("last_check");
+}
+```
+
+### Multi-Action Skills
+
+A single skill can provide multiple actions:
+
+```yaml
+skills:
+  - name: "check_site"
+    description: "Check website status"
+  - name: "check_batch"
+    description: "Check multiple websites"
+  - name: "get_history"
+    description: "Get check history for a site"
+```
+
+### Lifecycle Hooks
+
+```typescript
+export default defineSkill({
+  name: "my-skill",
+
+  onInstall: async (context) => {
+    // Run once when the skill is installed
+    await context.storage.set("installed_at", Date.now());
+  },
+
+  onUninstall: async (context) => {
+    // Clean up when the skill is removed
+    await context.storage.clear();
+  },
+
+  skills: { /* ... */ },
+});
+```
+
+## Testing Your Skill
+
+### Development Mode
+
+Run your skill with hot-reloading:
+
+```bash
+claw skill dev --path ./my-skill
+```
+
+Then test it interactively:
+
+```bash
+claw run "Check if example.com is up"
+```
+
+### Validation
+
+Before publishing, validate your skill:
+
+```bash
+claw skill validate --path ./my-skill
+```
+
+This checks:
+- Manifest schema is valid
+- Entry point exists and exports correctly
+- Permissions are declared
+- Tests pass
+- No security red flags (hardcoded secrets, broad permissions)
+
+## Publishing to ClawHub
+
+### Create a ClawHub Account
+
+```bash
+claw hub login
+```
+
+### Publish
+
+```bash
+cd my-skill
+claw skill publish
+```
+
+Your skill goes through an automated security scan. If it passes, it becomes available in the ClawHub directory within a few minutes.
+
+### Versioning
+
+Follow semver for updates:
+
+```bash
+# Bump version in manifest.yaml, then:
+claw skill publish
+```
+
+Users with auto-update enabled will receive the new version automatically.
+
+## Further Reading
+
+- [How to Install and Manage OpenClaw Skills Safely](/tutorials/install-manage-openclaw-skills) — Best practices for skill security
+- [OpenClaw MCP Server Guide](/tutorials/openclaw-mcp-server-guide) — Build MCP servers as an alternative to skills
+- [OpenClaw API Tutorial](/tutorials/openclaw-api-tutorial) — Use the API to automate skill management

@@ -1,0 +1,380 @@
+---
+title: "Self-Hosting OpenClaw: Docker Compose + Security Hardening Guide"
+description: "Complete guide to self-hosting OpenClaw with Docker Compose. Covers reverse proxy setup, SSL/TLS, security hardening, Tailscale remote access, monitoring, and backups."
+date: "2026-02-27"
+author: "Vibe OpenClaw Team"
+tags: ["self-hosting", "security", "docker", "deployment"]
+category: "deployment"
+faqs:
+  - question: "How much does it cost to self-host OpenClaw?"
+    answer: "The software is free. Hosting costs depend on your provider: a basic VPS with 2 vCPUs and 4GB RAM runs $5-20/month (Hetzner, DigitalOcean, Linode). Add your LLM API costs ($10-30/month typical). Total self-hosting cost is usually $15-50/month."
+  - question: "What are the minimum VPS requirements for OpenClaw?"
+    answer: "Minimum: 2 vCPU, 4GB RAM, 20GB SSD. Recommended: 4 vCPU, 8GB RAM, 40GB SSD. If running local models via Ollama, you need significantly more RAM (16GB+) and ideally a GPU."
+  - question: "Is self-hosting OpenClaw secure?"
+    answer: "Self-hosting can be more secure than cloud alternatives since you control your data. However, security depends on your configuration. This guide covers the essential hardening steps: firewall rules, SSL/TLS, authentication, automatic updates, and monitoring."
+  - question: "Can I access my self-hosted OpenClaw remotely?"
+    answer: "Yes. This guide covers two approaches: a public reverse proxy with SSL (Caddy or Nginx) for browser access anywhere, and Tailscale for private, zero-config VPN access. Tailscale is recommended for personal use as it requires no open ports."
+---
+
+## Why Self-Host OpenClaw?
+
+Self-hosting gives you full control over your AI agent infrastructure. Your data stays on your hardware, you control the update schedule, and there are no usage limits beyond your LLM API quota.
+
+Self-hosting is ideal when:
+
+- Privacy is a priority — no third-party data processing
+- You want to run OpenClaw on a home server or NAS
+- Your team needs a shared instance with custom configuration
+- You are already managing infrastructure and want to add AI capabilities
+
+## Prerequisites
+
+- A Linux server (Ubuntu 22.04+ or Debian 12+ recommended) or a home machine running Docker
+- Docker Engine 24+ and Docker Compose v2
+- A domain name (optional, but required for SSL)
+- SSH access to your server
+- Basic familiarity with the command line
+
+## Step 1: Initial Server Setup
+
+Start with a fresh server. Update packages and install Docker:
+
+```bash
+sudo apt update && sudo apt upgrade -y
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+```
+
+Log out and back in for the Docker group to take effect.
+
+Install Docker Compose:
+
+```bash
+sudo apt install docker-compose-plugin
+docker compose version
+```
+
+## Step 2: Docker Compose Configuration
+
+Create a project directory:
+
+```bash
+mkdir -p ~/openclaw && cd ~/openclaw
+```
+
+Create `docker-compose.yml`:
+
+```yaml
+version: "3.8"
+
+services:
+  openclaw:
+    image: ghcr.io/openclaw/openclaw:latest
+    container_name: openclaw
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - OPENCLAW_API_KEY=${OPENCLAW_API_KEY}
+      - OPENCLAW_LLM_PROVIDER=${OPENCLAW_LLM_PROVIDER:-anthropic}
+      - OPENCLAW_LOG_LEVEL=info
+      - OPENCLAW_AUTH_ENABLED=true
+      - OPENCLAW_AUTH_TOKEN=${OPENCLAW_AUTH_TOKEN}
+    volumes:
+      - ./config:/home/openclaw/.config/openclaw
+      - ./data:/home/openclaw/.local/share/openclaw
+      - ./skills:/home/openclaw/.local/share/openclaw/skills
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - openclaw
+
+volumes:
+  caddy_data:
+  caddy_config:
+```
+
+Note the `127.0.0.1:3000:3000` binding — this ensures OpenClaw is only accessible through the reverse proxy, not directly from the internet.
+
+Create the `.env` file:
+
+```bash
+OPENCLAW_API_KEY=sk-your-llm-key-here
+OPENCLAW_LLM_PROVIDER=anthropic
+OPENCLAW_AUTH_TOKEN=$(openssl rand -hex 32)
+```
+
+## Step 3: Reverse Proxy with Caddy
+
+Caddy automatically handles SSL certificates via Let's Encrypt. Create a `Caddyfile`:
+
+```
+openclaw.yourdomain.com {
+    reverse_proxy openclaw:3000
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    log {
+        output file /var/log/caddy/access.log
+    }
+}
+```
+
+Point your domain's DNS A record to your server's IP address. Caddy will automatically provision an SSL certificate on first request.
+
+### Alternative: Nginx
+
+If you prefer Nginx, create `nginx.conf`:
+
+```
+server {
+    listen 80;
+    server_name openclaw.yourdomain.com;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name openclaw.yourdomain.com;
+
+    ssl_certificate /etc/letsencrypt/live/openclaw.yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/openclaw.yourdomain.com/privkey.pem;
+
+    location / {
+        proxy_pass http://openclaw:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+For Nginx, you will need to set up Certbot separately for SSL certificates.
+
+## Step 4: Security Hardening
+
+### Firewall Rules
+
+Allow only essential ports:
+
+```bash
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow ssh
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw enable
+```
+
+### SSH Hardening
+
+Disable password authentication and root login:
+
+```bash
+sudo sed -i 's/#PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
+sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
+sudo systemctl restart sshd
+```
+
+### Docker Security
+
+Run OpenClaw as a non-root user (the official image does this by default). Add additional restrictions:
+
+```yaml
+services:
+  openclaw:
+    # ... existing config ...
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+```
+
+### Fail2Ban
+
+Install Fail2Ban to block brute-force attempts:
+
+```bash
+sudo apt install fail2ban
+sudo systemctl enable fail2ban
+```
+
+### Automatic Security Updates
+
+Enable unattended upgrades:
+
+```bash
+sudo apt install unattended-upgrades
+sudo dpkg-reconfigure -plow unattended-upgrades
+```
+
+## Step 5: Tailscale Remote Access
+
+For private access without exposing ports to the internet, Tailscale creates a zero-config VPN:
+
+```bash
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up
+```
+
+Access OpenClaw via your Tailscale IP (no Caddy or open ports needed):
+
+```
+http://100.x.y.z:3000
+```
+
+Tailscale is ideal for personal use. For team access, use Tailscale's ACLs to control who can reach your OpenClaw instance.
+
+If using Tailscale only (no public access), simplify your compose file by removing Caddy and binding directly:
+
+```yaml
+ports:
+  - "3000:3000"
+```
+
+Then close ports 80 and 443 in your firewall.
+
+## Step 6: Monitoring
+
+### Health Checks
+
+The Docker Compose health check monitors OpenClaw automatically. For external monitoring, use a service like Uptime Kuma:
+
+```yaml
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: uptime-kuma
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3001:3001"
+    volumes:
+      - ./uptime-kuma:/app/data
+```
+
+### Log Management
+
+View OpenClaw logs:
+
+```bash
+docker compose logs -f openclaw
+```
+
+For persistent log management, add a log rotation config:
+
+```yaml
+services:
+  openclaw:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+```
+
+### Resource Monitoring
+
+Check container resource usage:
+
+```bash
+docker stats openclaw
+```
+
+For long-term monitoring, consider adding cAdvisor or Prometheus + Grafana to your compose stack.
+
+## Step 7: Backups
+
+### Automated Backups
+
+Create a backup script at `~/openclaw/backup.sh`:
+
+```bash
+#!/bin/bash
+BACKUP_DIR=~/openclaw-backups
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+mkdir -p $BACKUP_DIR
+tar -czf "$BACKUP_DIR/openclaw-$TIMESTAMP.tar.gz" \
+  -C ~/openclaw config/ data/ skills/ .env docker-compose.yml Caddyfile
+
+# Keep only last 7 days of backups
+find $BACKUP_DIR -name "openclaw-*.tar.gz" -mtime +7 -delete
+```
+
+Schedule it with cron:
+
+```bash
+chmod +x ~/openclaw/backup.sh
+crontab -e
+# Add: 0 3 * * * ~/openclaw/backup.sh
+```
+
+### Restoring from Backup
+
+```bash
+cd ~/openclaw
+docker compose down
+tar -xzf ~/openclaw-backups/openclaw-20260227_030000.tar.gz -C ~/openclaw
+docker compose up -d
+```
+
+## Launching the Stack
+
+Start everything:
+
+```bash
+cd ~/openclaw
+docker compose up -d
+```
+
+Verify all services are running:
+
+```bash
+docker compose ps
+```
+
+Visit `https://openclaw.yourdomain.com` (or your Tailscale IP) to access the web UI.
+
+## Updating
+
+Pull the latest images and restart:
+
+```bash
+cd ~/openclaw
+docker compose pull
+docker compose up -d
+```
+
+Always back up before updating:
+
+```bash
+~/openclaw/backup.sh && docker compose pull && docker compose up -d
+```
+
+## Further Reading
+
+- [How to Run OpenClaw in Docker](/tutorials/openclaw-docker-setup) — Docker fundamentals and detailed configuration
+- [Is OpenClaw Safe? A Complete Security Guide](/blog/is-openclaw-safe) — Understand the security model and risks
+- [OpenClaw for Enterprise](/blog/openclaw-enterprise-guide) — Scaling self-hosted OpenClaw for teams

@@ -1,0 +1,399 @@
+---
+title: "OpenClaw Workflow Automation: Build AI-Powered Workflows"
+description: "Learn to build automated workflows with OpenClaw. Create triggers, chain skills, schedule recurring tasks, and handle errors in your AI-powered automation pipelines."
+date: "2026-02-26"
+author: "Vibe OpenClaw Team"
+tags: ["workflows", "automation", "productivity", "advanced"]
+category: "automation"
+faqs:
+  - question: "What is an OpenClaw workflow?"
+    answer: "An OpenClaw workflow is a sequence of automated steps that execute in order. Each step can run a skill, execute a command, call an API, or make a decision based on previous results. Workflows can be triggered manually, on a schedule, or by events like file changes or webhooks."
+  - question: "How do I schedule an OpenClaw workflow?"
+    answer: "Use the `claw workflow schedule` command with a cron expression. For example, `claw workflow schedule daily-report --cron '0 9 * * *'` runs the daily-report workflow at 9 AM every day. OpenClaw uses the system cron daemon under the hood."
+  - question: "Can OpenClaw workflows call external APIs?"
+    answer: "Yes. Workflows can use the built-in fetch skill, MCP servers with HTTP capabilities, or custom skills that wrap API calls. You can chain API calls together, pass data between steps, and handle errors at each stage."
+---
+
+## What Are Workflows?
+
+Workflows turn OpenClaw from a one-shot task runner into a powerful automation engine. Instead of typing individual commands, you define a sequence of steps that OpenClaw executes autonomously.
+
+Use workflows for:
+
+- Morning standup reports from git logs and project boards
+- Automated code review pipelines
+- Data processing and transformation chains
+- Scheduled maintenance tasks
+- Event-driven notifications and responses
+
+## Creating Your First Workflow
+
+Workflows are defined in YAML files stored in `~/.config/openclaw/workflows/`:
+
+```bash
+mkdir -p ~/.config/openclaw/workflows
+```
+
+Create a simple workflow at `~/.config/openclaw/workflows/daily-summary.yaml`:
+
+```yaml
+name: daily-summary
+description: Generate a daily summary of project activity
+
+steps:
+  - name: get-commits
+    action: run
+    prompt: "List all git commits from the last 24 hours in ~/projects/myapp. Format as bullet points with author and message."
+    output: commits
+
+  - name: get-issues
+    action: run
+    prompt: "Check the GitHub issues for myorg/myapp. List any new or updated issues from today."
+    output: issues
+
+  - name: generate-summary
+    action: run
+    prompt: |
+      Create a concise daily summary using this data:
+
+      Recent Commits:
+      {{commits}}
+
+      Issue Updates:
+      {{issues}}
+
+      Format as a brief standup-style update.
+    output: summary
+
+  - name: send-notification
+    action: skill
+    skill: slack-notify
+    params:
+      channel: "#dev-updates"
+      message: "{{summary}}"
+```
+
+Run it:
+
+```bash
+claw workflow run daily-summary
+```
+
+## Workflow Anatomy
+
+Every workflow has these components:
+
+### Steps
+
+Each step has:
+- `name` — unique identifier for the step
+- `action` — what to do: `run` (prompt), `skill` (execute a skill), `command` (shell command), or `condition` (branch logic)
+- `output` — variable name to store the result (accessible in later steps via `{{variable}}`)
+
+### Variables and Data Flow
+
+Steps pass data using template variables:
+
+```yaml
+steps:
+  - name: fetch-data
+    action: command
+    command: "curl -s https://api.example.com/stats"
+    output: api_response
+
+  - name: analyze
+    action: run
+    prompt: "Analyze this API response and highlight anomalies: {{api_response}}"
+    output: analysis
+```
+
+### Environment Variables
+
+Access environment variables with `${}`:
+
+```yaml
+steps:
+  - name: deploy
+    action: command
+    command: "ssh ${DEPLOY_HOST} 'cd /app && git pull && docker compose up -d'"
+```
+
+## Triggers and Actions
+
+### Manual Triggers
+
+```bash
+claw workflow run workflow-name
+```
+
+### Scheduled Triggers
+
+```bash
+# Every day at 9 AM
+claw workflow schedule daily-summary --cron "0 9 * * *"
+
+# Every Monday at 8 AM
+claw workflow schedule weekly-review --cron "0 8 * * 1"
+
+# Every 6 hours
+claw workflow schedule health-check --cron "0 */6 * * *"
+```
+
+List scheduled workflows:
+
+```bash
+claw workflow schedule list
+```
+
+### File Watch Triggers
+
+Trigger workflows when files change:
+
+```yaml
+name: auto-lint
+trigger:
+  watch:
+    paths:
+      - "~/projects/myapp/src/**/*.ts"
+    events: ["modify", "create"]
+
+steps:
+  - name: lint
+    action: command
+    command: "cd ~/projects/myapp && npm run lint:fix"
+```
+
+### Webhook Triggers
+
+Expose a workflow as an HTTP endpoint:
+
+```yaml
+name: pr-review
+trigger:
+  webhook:
+    path: "/hooks/pr-review"
+    method: POST
+
+steps:
+  - name: review
+    action: run
+    prompt: "Review the PR at {{webhook.body.pull_request.url}}. Check for security issues and code quality."
+```
+
+## Chaining Skills
+
+Skills are the building blocks of powerful workflows. Chain them for complex automations:
+
+```yaml
+name: content-pipeline
+description: Process and publish content
+
+steps:
+  - name: scrape
+    action: skill
+    skill: web-scraper
+    params:
+      url: "{{input.url}}"
+    output: raw_content
+
+  - name: summarize
+    action: run
+    prompt: "Summarize this content in 3 paragraphs: {{raw_content}}"
+    output: summary
+
+  - name: translate
+    action: skill
+    skill: translator
+    params:
+      text: "{{summary}}"
+      target_language: "es"
+    output: translated
+
+  - name: publish
+    action: skill
+    skill: cms-publisher
+    params:
+      title: "{{input.title}}"
+      body: "{{translated}}"
+      status: "draft"
+```
+
+## Conditional Logic
+
+Branch your workflow based on results:
+
+```yaml
+steps:
+  - name: run-tests
+    action: command
+    command: "cd ~/projects/myapp && npm test 2>&1"
+    output: test_result
+
+  - name: check-result
+    action: condition
+    condition: "{{test_result.exit_code}} == 0"
+    on_true:
+      - name: deploy
+        action: command
+        command: "cd ~/projects/myapp && npm run deploy"
+    on_false:
+      - name: notify-failure
+        action: skill
+        skill: slack-notify
+        params:
+          channel: "#alerts"
+          message: "Tests failed. Output: {{test_result}}"
+```
+
+## Error Handling
+
+### Retry Logic
+
+```yaml
+steps:
+  - name: api-call
+    action: command
+    command: "curl -sf https://api.example.com/data"
+    output: data
+    retry:
+      max_attempts: 3
+      delay: 10s
+      backoff: exponential
+```
+
+### Failure Actions
+
+Define what happens when a step fails:
+
+```yaml
+steps:
+  - name: critical-task
+    action: run
+    prompt: "Process the daily batch"
+    on_failure:
+      - name: alert
+        action: skill
+        skill: slack-notify
+        params:
+          channel: "#alerts"
+          message: "Batch processing failed: {{error}}"
+```
+
+### Continue on Failure
+
+Some steps are non-critical:
+
+```yaml
+steps:
+  - name: optional-metrics
+    action: command
+    command: "curl -s https://metrics.example.com/report"
+    continue_on_failure: true
+
+  - name: main-task
+    action: run
+    prompt: "This runs even if metrics collection failed"
+```
+
+## Real-World Workflow Examples
+
+### Morning Dev Briefing
+
+```yaml
+name: morning-briefing
+trigger:
+  schedule:
+    cron: "0 8 * * 1-5"
+
+steps:
+  - name: git-activity
+    action: run
+    prompt: "Summarize git activity across all repos in ~/projects/ from the last 24 hours"
+    output: git_summary
+
+  - name: calendar
+    action: skill
+    skill: google-calendar
+    params:
+      action: "today"
+    output: meetings
+
+  - name: briefing
+    action: run
+    prompt: |
+      Create a morning briefing:
+      Git Activity: {{git_summary}}
+      Today's Meetings: {{meetings}}
+      Keep it concise and actionable.
+    output: briefing
+
+  - name: send
+    action: skill
+    skill: slack-notify
+    params:
+      channel: "#personal"
+      message: "{{briefing}}"
+```
+
+### Automated PR Review
+
+```yaml
+name: pr-review
+trigger:
+  webhook:
+    path: "/hooks/github-pr"
+
+steps:
+  - name: checkout
+    action: command
+    command: "cd ~/projects/myapp && git fetch && git checkout {{webhook.body.pull_request.head.ref}}"
+
+  - name: test
+    action: command
+    command: "cd ~/projects/myapp && npm test"
+    output: tests
+
+  - name: review
+    action: run
+    prompt: |
+      Review the changes in this PR. Focus on:
+      1. Security vulnerabilities
+      2. Performance issues
+      3. Code style consistency
+      Test results: {{tests}}
+    output: review
+
+  - name: comment
+    action: skill
+    skill: github
+    params:
+      action: "comment"
+      repo: "myorg/myapp"
+      pr: "{{webhook.body.pull_request.number}}"
+      body: "{{review}}"
+```
+
+## Managing Workflows
+
+```bash
+# List all workflows
+claw workflow list
+
+# View workflow details
+claw workflow show daily-summary
+
+# View execution history
+claw workflow history daily-summary
+
+# Disable a scheduled workflow
+claw workflow disable daily-summary
+
+# Delete a workflow
+claw workflow delete daily-summary
+```
+
+## Further Reading
+
+- [OpenClaw Automation: Automate Repetitive Tasks](/blog/openclaw-automation-guide) — Practical automation recipes and patterns
+- [OpenClaw MCP Server Guide](/tutorials/openclaw-mcp-server-guide) — Connect workflows to external tools via MCP
+- [OpenClaw Prompt Engineering Tips](/blog/openclaw-prompt-engineering) — Write better prompts for your workflow steps
