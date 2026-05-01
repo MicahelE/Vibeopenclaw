@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { ContactForm } from "./contact-form";
 
+export const revalidate = 3600;
+
 export const metadata: Metadata = {
   title: "Contact",
   description:

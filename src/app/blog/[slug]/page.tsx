@@ -1,11 +1,12 @@
 import { notFound } from "next/navigation";
-import { getContentBySlug, getAllSlugs, getAllContent } from "@/lib/content";
+import { getContentBySlug, getAllSlugs, getRelatedContent } from "@/lib/content";
 import { MdxContent } from "@/components/mdx-content";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle, CardDescription } from "@/components/ui/card";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import type { Metadata } from "next";
+
+export const revalidate = 86400;
 
 export async function generateStaticParams() {
   return getAllSlugs("blog").map((slug) => ({ slug }));
@@ -31,6 +32,7 @@ export async function generateMetadata({
       description: item.meta.description,
       type: "article",
       publishedTime: item.meta.date,
+      modifiedTime: item.meta.lastModified || item.meta.date,
       authors: [item.meta.author],
     },
   };
@@ -45,19 +47,22 @@ export default async function BlogPostPage({
   const item = getContentBySlug("blog", slug);
   if (!item) notFound();
 
-  const allPosts = getAllContent("blog");
-  const relatedPosts = allPosts
-    .filter((p) => p.slug !== slug)
-    .slice(0, 3);
+  const relatedPosts = getRelatedContent("blog", slug, 3);
+  const lastModified = item.meta.lastModified || item.meta.date;
+  const wasUpdated = item.meta.lastModified && item.meta.lastModified !== item.meta.date;
 
   const articleJsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: item.meta.title,
     description: item.meta.description,
-    author: { "@type": "Person", name: item.meta.author },
+    author: {
+      "@type": "Person",
+      name: item.meta.author,
+      ...(item.meta.authorSlug && { url: `https://vibeopenclaw.com/authors/${item.meta.authorSlug}` }),
+    },
     datePublished: item.meta.date,
-    dateModified: item.meta.date,
+    dateModified: lastModified,
     mainEntityOfPage: {
       "@type": "WebPage",
       "@id": `https://vibeopenclaw.com/blog/${slug}`,
@@ -107,13 +112,25 @@ export default async function BlogPostPage({
         <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-gray-500">
           <span>By {item.meta.author}</span>
           <span>&middot;</span>
-          <time>
-            {new Date(item.meta.date).toLocaleDateString("en-US", {
+          <time dateTime={item.meta.date}>
+            Published {new Date(item.meta.date).toLocaleDateString("en-US", {
               year: "numeric",
               month: "long",
               day: "numeric",
             })}
           </time>
+          {wasUpdated && (
+            <>
+              <span>&middot;</span>
+              <time dateTime={lastModified}>
+                Updated {new Date(lastModified).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </time>
+            </>
+          )}
         </div>
         {item.meta.tags?.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-2">

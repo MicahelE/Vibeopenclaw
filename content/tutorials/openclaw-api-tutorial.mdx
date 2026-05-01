@@ -2,9 +2,21 @@
 title: "OpenClaw API Tutorial: Build Custom Integrations Step-by-Step"
 description: "Learn to use the OpenClaw API for custom integrations. Covers REST endpoints, authentication, webhooks, error handling, and building a real-world integration."
 date: "2026-03-02"
+lastModified: "2026-05-01"
 author: "Vibe OpenClaw Team"
 tags: ["api", "development", "integrations", "advanced"]
 category: "development"
+howTo:
+  - name: "Enable the API server"
+    text: "OpenClaw exposes a REST API on port 3000 by default. Confirm it's reachable with `curl http://localhost:3000/api/v1/health`."
+  - name: "Generate an API token"
+    text: "Run `claw token create --name my-integration` to create a Bearer token. Copy the token — it's shown only once."
+  - name: "Make an authenticated request"
+    text: "Send a request with the token in the Authorization header: `curl -H 'Authorization: Bearer YOUR_TOKEN' http://localhost:3000/api/v1/skills`."
+  - name: "Trigger an agent task"
+    text: "POST to /api/v1/tasks with a JSON body containing your prompt. The response includes a task_id you can poll for status and results."
+  - name: "Wire up webhooks for events"
+    text: "Configure outgoing webhooks in Settings → Webhooks (or via /api/v1/webhooks) to receive real-time notifications when tasks complete or skills execute."
 faqs:
   - question: "How do I access the OpenClaw API?"
     answer: "The OpenClaw API is available when you run OpenClaw with the web server enabled (the default). It listens on port 3000 and provides REST endpoints at /api/v1/. Authentication uses API tokens generated via `claw token create`."

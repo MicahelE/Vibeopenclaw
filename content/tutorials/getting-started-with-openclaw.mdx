@@ -2,9 +2,32 @@
 title: "OpenClaw Setup Guide: Step-by-Step Installation for Mac, Windows & Linux (2026)"
 description: "A comprehensive guide to installing and configuring OpenClaw on any platform. From prerequisites to your first running instance."
 date: "2026-02-15"
+lastModified: "2026-05-01"
 author: "Vibe OpenClaw Team"
 tags: ["setup", "beginner", "installation"]
 category: "getting-started"
+howTo:
+  - name: "Install Node.js 22+"
+    text: "OpenClaw requires Node.js 22 or newer. Install via the official installer, nvm, or your package manager. Verify with `node --version`."
+  - name: "Install OpenClaw"
+    text: "Run `npm install -g openclaw` (or `brew install openclaw` on macOS). The CLI is then available as `claw`."
+  - name: "Run onboarding"
+    text: "Run `claw onboard` in your terminal. The wizard walks through provider selection, API key entry, and channel setup."
+  - name: "Pick an LLM provider"
+    text: "Choose Anthropic, OpenAI, Google, or a local model via Ollama. Paste your API key — OpenClaw stores it securely in ~/.openclaw."
+  - name: "Chat with your agent"
+    text: "Run `claw chat` or open http://localhost:3000 to start your first conversation. From here you can install skills and connect MCP servers."
+faqs:
+  - question: "How to setup OpenClaw step by step?"
+    answer: "Install Node.js 22+, run `npm install -g openclaw`, then run `claw onboard` and follow the wizard. The onboarding flow handles provider selection, API key configuration, channel setup, and your first skills. Total setup time is about 10 minutes if you have an LLM API key ready."
+  - question: "How to use OpenClaw on Windows?"
+    answer: "Install Node.js for Windows, then run `npm install -g openclaw` from PowerShell or Windows Terminal. OpenClaw runs natively on Windows 10 and 11. For Docker-based setup on Windows, use Docker Desktop with WSL2 enabled."
+  - question: "How do I install OpenClaw from GitHub?"
+    answer: "Clone the repo with `git clone https://github.com/openclaw/openclaw.git`, run `cd openclaw && npm install`, then `npm link` to install the CLI globally. This is recommended only if you plan to contribute or modify OpenClaw — for normal use, install via npm."
+  - question: "Can I run OpenClaw locally?"
+    answer: "Yes — OpenClaw is designed to run locally. The agent, gateway, and skills all run on your machine. Only LLM inference goes to your provider (or stays local if you use Ollama). No data is sent to OpenClaw servers."
+  - question: "How to setup OpenRouter for OpenClaw?"
+    answer: "During `claw onboard`, choose 'Custom' as your provider and enter https://openrouter.ai/api/v1 as the base URL with your OpenRouter API key. OpenClaw treats OpenRouter as an OpenAI-compatible endpoint, giving you access to all OpenRouter models."
 ---
 
 ## What is OpenClaw?
@@ -140,6 +163,10 @@ model:
 
 ## Further Reading
 
+- [How to Run OpenClaw in Docker](/tutorials/openclaw-docker-setup) — Containerized setup with Docker Compose for production-grade deployments
+- [OpenClaw API Tutorial](/tutorials/openclaw-api-tutorial) — Build custom integrations with the REST API and webhooks
+- [OpenClaw MCP Server Guide](/tutorials/openclaw-mcp-server-guide) — Connect 1000+ tools via the Model Context Protocol
+- [Self-Hosting OpenClaw](/tutorials/openclaw-self-hosting-guide) — Docker Compose, SSL, Tailscale, and security hardening
 - [How to Install and Manage OpenClaw Skills Safely](/tutorials/install-manage-openclaw-skills) — Learn to find, install, and vet skills securely
 - [OpenClaw WhatsApp Bot Setup](/tutorials/openclaw-whatsapp-bot-setup) — Connect OpenClaw to WhatsApp for AI-powered messaging
 - [Is OpenClaw Safe?](/blog/is-openclaw-safe) — A complete security guide for configuring OpenClaw safely
