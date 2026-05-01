@@ -3,6 +3,8 @@ import { Card, CardTitle, CardDescription } from "@/components/ui/card";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import type { Metadata } from "next";
 
+export const revalidate = 3600;
+
 export const metadata: Metadata = {
   title: "Setup Service",
   description:

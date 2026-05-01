@@ -7,15 +7,23 @@ export interface FAQItem {
   answer: string;
 }
 
+export interface HowToStep {
+  name: string;
+  text: string;
+}
+
 export interface ContentMeta {
   title: string;
   description: string;
   date: string;
+  lastModified?: string;
   author: string;
+  authorSlug?: string;
   tags: string[];
   category?: string;
   featuredImage?: string;
   faqs?: FAQItem[];
+  howTo?: HowToStep[];
   slug: string;
 }
 
@@ -73,4 +81,33 @@ export function getAllSlugs(type: "tutorials" | "blog"): string[] {
     .readdirSync(dir)
     .filter((f) => f.endsWith(".mdx"))
     .map((f) => f.replace(/\.mdx$/, ""));
+}
+
+export function getRelatedContent(
+  type: "tutorials" | "blog",
+  slug: string,
+  limit = 3
+): ContentMeta[] {
+  const all = getAllContent(type);
+  const current = all.find((p) => p.slug === slug);
+  if (!current) return all.filter((p) => p.slug !== slug).slice(0, limit);
+
+  const tokenize = (s: string) =>
+    new Set(s.toLowerCase().split(/[\s\-_/]+/).filter((t) => t.length > 2));
+  const currentTokens = tokenize(current.slug + " " + (current.tags || []).join(" "));
+  const currentTags = new Set((current.tags || []).map((t) => t.toLowerCase()));
+
+  return all
+    .filter((p) => p.slug !== slug)
+    .map((p) => {
+      const pTokens = tokenize(p.slug + " " + (p.tags || []).join(" "));
+      const pTags = new Set((p.tags || []).map((t) => t.toLowerCase()));
+      const tagOverlap = [...currentTags].filter((t) => pTags.has(t)).length;
+      const tokenOverlap = [...currentTokens].filter((t) => pTokens.has(t)).length;
+      const score = tagOverlap * 3 + tokenOverlap;
+      return { item: p, score };
+    })
+    .sort((a, b) => b.score - a.score || new Date(b.item.date).getTime() - new Date(a.item.date).getTime())
+    .slice(0, limit)
+    .map((s) => s.item);
 }

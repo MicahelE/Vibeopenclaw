@@ -112,7 +112,11 @@ export default async function SkillDetailPage({
             name: skill.name,
             description: skill.shortDescription || skill.description,
             author: { "@type": "Person", name: skill.author },
-            applicationCategory: "AI Agent Skill",
+            applicationCategory: "DeveloperApplication",
+            applicationSubCategory: "AI Agent Skill",
+            operatingSystem: "Cross-platform",
+            url: `https://vibeopenclaw.com/skills/${slug}`,
+            ...(skill.githubUrl && { downloadUrl: skill.githubUrl }),
             offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
           }),
         }}

@@ -4,6 +4,8 @@ import { getFeaturedSkills } from "@/lib/skills";
 import { getAllContent } from "@/lib/content";
 import type { Metadata } from "next";
 
+export const revalidate = 3600;
+
 export const metadata: Metadata = {
   title: "Vibe OpenClaw — OpenClaw Setup, Skills & Tutorials",
   description:
@@ -90,13 +92,6 @@ export default function Home() {
                 </div>
               </div>
             ))}
-          </div>
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-6 text-sm text-gray-500 dark:text-gray-400">
-            <span>As seen on:</span>
-            <span className="font-semibold text-gray-700 dark:text-gray-300">MacStories</span>
-            <span className="font-semibold text-gray-700 dark:text-gray-300">Fast Company</span>
-            <span className="font-semibold text-gray-700 dark:text-gray-300">Hacker News</span>
-            <span className="font-semibold text-gray-700 dark:text-gray-300">Product Hunt</span>
           </div>
         </div>
       </section>

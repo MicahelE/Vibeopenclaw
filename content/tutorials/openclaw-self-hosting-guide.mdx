@@ -2,10 +2,17 @@
 title: "Self-Hosting OpenClaw: Docker Compose + Security Hardening Guide"
 description: "Complete guide to self-hosting OpenClaw with Docker Compose. Covers reverse proxy setup, SSL/TLS, security hardening, Tailscale remote access, monitoring, and backups."
 date: "2026-02-27"
+lastModified: "2026-05-01"
 author: "Vibe OpenClaw Team"
 tags: ["self-hosting", "security", "docker", "deployment"]
 category: "deployment"
 faqs:
+  - question: "Can you self host OpenClaw?"
+    answer: "Yes. OpenClaw is open source and explicitly designed for self-hosting. You can run it on a VPS, home server, or any machine with Docker. Self-hosting gives you full control over your data, configuration, and which LLM providers your agent talks to."
+  - question: "What is the best way to host OpenClaw?"
+    answer: "For most users, Docker Compose on a small VPS (Hetzner, DigitalOcean, Linode — $5-20/month) with Caddy as a reverse proxy and Tailscale for private remote access is the most reliable setup. This guide walks through the full configuration including SSL, firewall rules, and automatic backups."
+  - question: "Is OpenClaw safe to install?"
+    answer: "OpenClaw itself is open source and audited by the community. The main risk is the skills you install — some unvetted skills request broad permissions. Stick to skills from the official directory or our security-vetted skills directory, run OpenClaw in Docker for filesystem isolation, and review permissions before installing any third-party skill."
   - question: "How much does it cost to self-host OpenClaw?"
     answer: "The software is free. Hosting costs depend on your provider: a basic VPS with 2 vCPUs and 4GB RAM runs $5-20/month (Hetzner, DigitalOcean, Linode). Add your LLM API costs ($10-30/month typical). Total self-hosting cost is usually $15-50/month."
   - question: "What are the minimum VPS requirements for OpenClaw?"
