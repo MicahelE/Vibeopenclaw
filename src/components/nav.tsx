@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useState } from "react";
 import { OpenClawLogo } from "./openclaw-logo";
+import { PLATFORM_URL } from "@/lib/site";
 
 const links = [
+  { href: "/managed", label: "Managed Platform" },
   { href: "/skills", label: "Skills" },
   { href: "/agent-skills", label: "Agent Skills" },
   { href: "/tutorials", label: "Tutorials" },
@@ -38,6 +40,14 @@ export function Nav() {
               {link.label}
             </Link>
           ))}
+          <a
+            href={PLATFORM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
+          >
+            Launch App
+          </a>
         </div>
 
         {/* Mobile toggle */}
@@ -74,6 +84,15 @@ export function Nav() {
               {link.label}
             </Link>
           ))}
+          <a
+            href={PLATFORM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setOpen(false)}
+            className="mt-3 block rounded-lg bg-red-600 px-4 py-2 text-center text-sm font-semibold text-white transition-colors hover:bg-red-700"
+          >
+            Launch App
+          </a>
         </div>
       )}
     </nav>

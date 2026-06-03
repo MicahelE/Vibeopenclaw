@@ -8,6 +8,8 @@ type ButtonProps = {
   className?: string;
   type?: "button" | "submit";
   disabled?: boolean;
+  target?: string;
+  rel?: string;
 };
 
 const variants = {
@@ -33,12 +35,14 @@ export function Button({
   className = "",
   type = "button",
   disabled = false,
+  target,
+  rel,
 }: ButtonProps) {
   const classes = `inline-flex items-center justify-center rounded-lg font-medium transition-colors ${variants[variant]} ${sizes[size]} ${disabled ? "opacity-50 cursor-not-allowed" : ""} ${className}`;
 
   if (href) {
     return (
-      <Link href={href} className={classes}>
+      <Link href={href} target={target} rel={rel} className={classes}>
         {children}
       </Link>
     );

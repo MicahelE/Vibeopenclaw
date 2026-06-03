@@ -1,7 +1,15 @@
 import Link from "next/link";
 import { OpenClawLogo } from "./openclaw-logo";
+import { PLATFORM_URL } from "@/lib/site";
 
 const footerLinks = [
+  {
+    title: "Platform",
+    links: [
+      { href: "/managed", label: "Managed Platform" },
+      { href: PLATFORM_URL, label: "Launch App", external: true },
+    ],
+  },
   {
     title: "Resources",
     links: [
@@ -32,7 +40,7 @@ export function Footer() {
   return (
     <footer className="border-t border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950">
       <div className="mx-auto max-w-7xl px-6 py-12">
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-8 md:grid-cols-5">
           <div className="col-span-2 md:col-span-1">
             <Link
               href="/"
@@ -56,6 +64,8 @@ export function Footer() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
+                      target={"external" in link && link.external ? "_blank" : undefined}
+                      rel={"external" in link && link.external ? "noopener noreferrer" : undefined}
                       className="text-sm text-gray-600 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
                     >
                       {link.label}

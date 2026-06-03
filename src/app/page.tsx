@@ -2,6 +2,7 @@ import { Card, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getFeaturedSkills } from "@/lib/skills";
 import { getAllContent } from "@/lib/content";
+import { PLATFORM_URL } from "@/lib/site";
 import type { Metadata } from "next";
 
 export const revalidate = 3600;
@@ -47,6 +48,16 @@ export default function Home() {
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Button href="/contact" variant="primary" size="lg">
               Get Setup Help
+            </Button>
+            <Button
+              href={PLATFORM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="outline"
+              size="lg"
+              className="border-white/30 text-white hover:bg-white/10"
+            >
+              Launch App
             </Button>
             <Button href="#pricing" variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10">
               View Pricing
@@ -167,6 +178,81 @@ export default function Home() {
             We&apos;ve configured hundreds of OpenClaw instances. We know what works,
             what breaks, and which skills are actually safe. You get a working setup —
             hardened, optimized, and vibing — without touching a config file.
+          </p>
+        </div>
+      </section>
+
+      {/* Managed Platform */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-red-950 via-gray-900 to-gray-950 py-24 text-white">
+        <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-red-600/20 blur-3xl" />
+        <div className="relative mx-auto max-w-5xl px-6">
+          <div className="text-center">
+            <span className="inline-flex items-center gap-2 rounded-full bg-red-600/20 px-4 py-1 text-sm font-semibold text-red-300">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-red-400" />
+              </span>
+              Now live — app.vibeopenclaw.com
+            </span>
+            <h2 className="mx-auto mt-5 max-w-3xl text-3xl font-extrabold tracking-tight sm:text-5xl">
+              Why Set It Up When We Can <span className="text-red-400">Run It For You?</span>
+            </h2>
+            <p className="mx-auto mt-5 max-w-2xl text-lg text-gray-300">
+              The setup service gets you running once. The <strong className="text-white">Managed OpenClaw
+              &amp; Agents Platform</strong> keeps you running — forever. No servers, no config files,
+              no patch nights. Just log in, deploy your agents, and let us handle the infrastructure,
+              security, and updates around the clock.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-6 md:grid-cols-3">
+            {[
+              {
+                title: "Live in Minutes, Not Weekends",
+                desc: "Skip installs and Docker entirely. Sign up, launch your agents, and you're running on hardened infrastructure today.",
+              },
+              {
+                title: "Agents That Never Sleep",
+                desc: "Monitor, scale, and manage every agent from one dashboard — with health checks, restarts, and alerts handled for you.",
+              },
+              {
+                title: "Secure & Updated, Automatically",
+                desc: "Sandboxed execution, vetted skills, and automatic patches mean you're never running a stale, vulnerable build.",
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="rounded-xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition-colors hover:border-red-500/40 hover:bg-white/10"
+              >
+                <h3 className="text-lg font-semibold text-white">{item.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-gray-300">
+                  {item.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-12 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+            <Button
+              href={PLATFORM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="primary"
+              size="lg"
+            >
+              Launch App — It&apos;s Live
+            </Button>
+            <Button
+              href="/managed"
+              variant="outline"
+              size="lg"
+              className="border-white/30 text-white hover:bg-white/10"
+            >
+              Explore the Platform
+            </Button>
+          </div>
+          <p className="mt-4 text-center text-sm text-gray-400">
+            No servers to manage. No credit card to start exploring.
           </p>
         </div>
       </section>
